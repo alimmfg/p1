@@ -3,32 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت پروژه</title>
+    <title>مدیریت فنی کارگاه</title>
     <link rel="apple-touch-icon" href="logo.jpg">
     <link rel="icon" href="logo.jpg">
-    
     <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
     <style>
         body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
         .header-box { text-align: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 3px solid #1a73e8; margin-bottom: 10px; }
-        .input-group { display: flex; gap: 5px; margin-bottom: 15px; }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
-        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
+        .logo { width: 70px; height: 70px; object-fit: cover; border-radius: 50%; border: 2px solid #1a73e8; margin-bottom: 10px; }
+        .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
+        button { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
         .btn-main { background: #1a73e8; color: white; }
         .project-box { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .step-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; }
-        .is-done { background: #ceead6 !important; color: #0d652d !important; }
-        .delete-btn { background: #fce8e6; color: #d93025; font-size: 11px; }
+        .step-item { padding: 10px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+        .step-main { display: flex; justify-content: space-between; align-items: center; }
+        .note-area { font-size: 11px; margin-top: 5px; display: block; line-height: 1.6; }
+        .note-general { color: #555; background: #f9f9f9; padding: 3px 7px; border-radius: 4px; border-right: 3px solid #ccc; }
+        .note-finish { color: #0d652d; background: #e6f4ea; padding: 3px 7px; border-radius: 4px; border-right: 3px solid #34a853; margin-top: 3px; }
+        .is-done { background: #ceead6 !important; color: #0d652d !important; border: 1px solid #34a853; }
+        .btn-note { background: #f1f3f4; color: #5f6368; font-size: 11px; margin-left: 5px; }
+        .btn-finish { background: #1a73e8; color: white; font-size: 11px; }
+        .time-label { font-size: 9px; color: #888; margin-top: 2px; }
     </style>
 </head>
 <body>
 
     <div class="header-box">
-        <img src="logo.jpg" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/80?text=LOGO'">
+        <img src="logo.jpg" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/70?text=LOGO'">
         <div class="input-group">
             <input type="text" id="newProj" placeholder="نام پروژه جدید...">
-            <button class="btn-main" onclick="addProject()">ساخت پروژه</button>
+            <button class="btn-main" onclick="addProject()">ساخت</button>
         </div>
     </div>
 
@@ -54,17 +59,43 @@
             let input = document.getElementById('input-' + projId);
             if(!input.value) return;
             let proj = projects.find(p => p.id === projId);
-            proj.steps.push({ name: input.value, done: false, date: '' });
+            proj.steps.push({ name: input.value, done: false, date: '', note: '', finishNote: '' });
             input.value = '';
             save();
         }
 
-        function toggleStep(projId, stepIdx) {
+        // یادداشت معمولی (بدون پایان کار)
+        function addGeneralNote(projId, stepIdx) {
+            let note = prompt("یادداشت حین کار (توضیحات فنی):");
+            if (note !== null) {
+                let now = moment().locale('fa').format('MM/DD HH:mm');
+                projects.find(p => p.id === projId).steps[stepIdx].note = note ? `${note} (${now})` : '';
+                save();
+            }
+        }
+
+        // دکمه پایان کار (سبز کردن + یادداشت نهایی)
+        function finishStep(projId, stepIdx) {
             let proj = projects.find(p => p.id === projId);
             let step = proj.steps[stepIdx];
-            step.done = !step.done;
-            step.date = step.done ? moment().locale('fa').format('YYYY/MM/DD HH:mm') : '';
-            save();
+            
+            if (!step.done) {
+                let fNote = prompt("گزارش نهایی پایان کار را بنویسید:");
+                if (fNote !== null) {
+                    let now = moment().locale('fa').format('YYYY/MM/DD HH:mm');
+                    step.done = true;
+                    step.date = now;
+                    step.finishNote = fNote ? `گزارش نهایی: ${fNote}` : 'بدون گزارش نهایی';
+                    save();
+                }
+            } else {
+                if(confirm("آیا می‌خواهید این مرحله را از حالت پایان خارج کنید؟")) {
+                    step.done = false;
+                    step.date = '';
+                    step.finishNote = '';
+                    save();
+                }
+            }
         }
 
         function deleteProject(projId) {
@@ -81,23 +112,32 @@
                 let html = `
                     <div class="project-box">
                         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <span style="font-weight:bold;">${proj.name}</span>
-                            <button class="delete-btn" onclick="deleteProject(${proj.id})">حذف</button>
+                            <span style="font-weight:bold; color:#1a73e8;">📌 ${proj.name}</span>
+                            <button style="color:#bbb; background:none; font-size:10px;" onclick="deleteProject(${proj.id})">حذف</button>
                         </div>
                         <div class="input-group">
-                            <input type="text" id="input-${proj.id}" placeholder="افزودن مرحله...">
+                            <input type="text" id="input-${proj.id}" placeholder="مرحله جدید...">
                             <button style="background:#34a853; color:white;" onclick="addStep(${proj.id})">+</button>
                         </div>
                         <div>
                             ${proj.steps.map((step, idx) => `
                                 <div class="step-item">
-                                    <div style="display:flex; flex-direction:column;">
-                                        <span>${step.name}</span>
-                                        <small style="color:#888;">${step.date}</small>
+                                    <div class="step-main">
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span style="${step.done ? 'text-decoration:line-through; color:#888;' : 'font-weight:bold;'}">${step.name}</span>
+                                            <span class="time-label">${step.date ? '🏁 پایان: ' + step.date : '⏳ در حال اجرا...'}</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn-note" onclick="addGeneralNote(${proj.id}, ${idx})">📝 یادداشت</button>
+                                            <button class="btn-finish ${step.done ? 'is-done' : ''}" onclick="finishStep(${proj.id}, ${idx})">
+                                                ${step.done ? '✅ تمام شد' : '🏁 پایان کار'}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button style="background:#e8f0fe; color:#1a73e8;" class="${step.done ? 'is-done' : ''}" onclick="toggleStep(${proj.id}, ${idx})">
-                                        ${step.done ? '✅' : 'ثبت'}
-                                    </button>
+                                    <div class="note-area">
+                                        ${step.note ? `<div class="note-general">💬 ${step.note}</div>` : ''}
+                                        ${step.finishNote ? `<div class="note-finish">📋 ${step.finishNote}</div>` : ''}
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>
