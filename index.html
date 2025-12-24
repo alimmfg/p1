@@ -3,47 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت فنی کارگاه</title>
-    <link rel="apple-touch-icon" href="logo.jpg">
-    <link rel="icon" href="logo.jpg">
+    <title>گروه فنی محبوبی</title>
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" href="logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
     <style>
         body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
         .header-box { text-align: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { width: 70px; height: 70px; object-fit: cover; border-radius: 50%; border: 2px solid #1a73e8; margin-bottom: 10px; }
+        .logo { width: 100px; height: auto; margin-bottom: 10px; }
         .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
         input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
         button { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
         .btn-main { background: #1a73e8; color: white; }
         .project-box { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .step-item { padding: 10px; border-bottom: 1px solid #f0f0f0; background: #fff; }
-        .step-main { display: flex; justify-content: space-between; align-items: center; }
-        .note-area { font-size: 11px; margin-top: 5px; display: block; line-height: 1.6; }
-        .note-general { color: #555; background: #f9f9f9; padding: 3px 7px; border-radius: 4px; border-right: 3px solid #ccc; }
-        .note-finish { color: #0d652d; background: #e6f4ea; padding: 3px 7px; border-radius: 4px; border-right: 3px solid #34a853; margin-top: 3px; }
-        .is-done { background: #ceead6 !important; color: #0d652d !important; border: 1px solid #34a853; }
-        .btn-note { background: #f1f3f4; color: #5f6368; font-size: 11px; margin-left: 5px; }
-        .btn-finish { background: #1a73e8; color: white; font-size: 11px; }
-        .time-label { font-size: 9px; color: #888; margin-top: 2px; }
+        .step-item { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+        .note-area { font-size: 11px; margin-top: 5px; line-height: 1.6; }
+        .note-general { color: #555; background: #f9f9f9; padding: 5px; border-radius: 4px; border-right: 3px solid #ccc; }
+        .note-finish { color: #0d652d; background: #e6f4ea; padding: 5px; border-radius: 4px; border-right: 3px solid #34a853; margin-top: 3px; }
+        .is-done { background: #ceead6 !important; color: #0d652d !important; }
+        .loading { text-align: center; color: #666; font-size: 12px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div class="header-box">
-        <img src="logo.jpg" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/70?text=LOGO'">
+        <img src="logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/100?text=MAHBUBI'">
+        <div id="status" class="loading">در حال اتصال به سرور...</div>
         <div class="input-group">
-            <input type="text" id="newProj" placeholder="نام پروژه جدید...">
-            <button class="btn-main" onclick="addProject()">ساخت</button>
+            <input type="text" id="newProj" placeholder="نام پروژه جدید (مثلاً تجهیزات ۱)...">
+            <button class="btn-main" onclick="addProject()">ساخت پروژه</button>
         </div>
     </div>
 
     <div id="projectList"></div>
 
     <script>
-        let projects = JSON.parse(localStorage.getItem('tech_factory_db')) || [];
+        // تنظیمات Supabase شما (استخراج شده از تصویر)
+        const SB_URL = "https://pffgmrzntpxfyxltltyx.supabase.co";
+        const SB_KEY = "YOUR_ANON_KEY"; // اینجا باید API KEY (anon public) را کپی کنید
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        function save() {
-            localStorage.setItem('tech_factory_db', JSON.stringify(projects));
+        let projects = [];
+
+        async function loadData() {
+            document.getElementById('status').innerText = "⏳ در حال دریافت اطلاعات...";
+            const { data, error } = await supabase.from('workshop_data').select('projects_json').eq('id', 1).single();
+            if (data) {
+                projects = data.projects_json;
+                render();
+                document.getElementById('status').innerText = "✅ همگام‌سازی شد";
+            }
+        }
+
+        async function saveData() {
+            document.getElementById('status').innerText = "☁️ در حال ذخیره روی سرور...";
+            await supabase.from('workshop_data').update({ projects_json: projects }).eq('id', 1);
+            document.getElementById('status').innerText = "✅ تغییرات ذخیره شد";
             render();
         }
 
@@ -52,56 +68,49 @@
             if(!name) return;
             projects.push({ id: Date.now(), name: name, steps: [] });
             document.getElementById('newProj').value = '';
-            save();
+            saveData();
         }
 
         function addStep(projId) {
             let input = document.getElementById('input-' + projId);
             if(!input.value) return;
-            let proj = projects.find(p => p.id === projId);
-            proj.steps.push({ name: input.value, done: false, date: '', note: '', finishNote: '' });
+            projects.find(p => p.id === projId).steps.push({ name: input.value, done: false, date: '', note: '', finishNote: '' });
             input.value = '';
-            save();
+            saveData();
         }
 
-        // یادداشت معمولی (بدون پایان کار)
         function addGeneralNote(projId, stepIdx) {
-            let note = prompt("یادداشت حین کار (توضیحات فنی):");
+            let note = prompt("یادداشت فنی:");
             if (note !== null) {
                 let now = moment().locale('fa').format('MM/DD HH:mm');
                 projects.find(p => p.id === projId).steps[stepIdx].note = note ? `${note} (${now})` : '';
-                save();
+                saveData();
             }
         }
 
-        // دکمه پایان کار (سبز کردن + یادداشت نهایی)
         function finishStep(projId, stepIdx) {
-            let proj = projects.find(p => p.id === projId);
-            let step = proj.steps[stepIdx];
-            
+            let step = projects.find(p => p.id === projId).steps[stepIdx];
             if (!step.done) {
-                let fNote = prompt("گزارش نهایی پایان کار را بنویسید:");
+                let fNote = prompt("گزارش پایان کار:");
                 if (fNote !== null) {
-                    let now = moment().locale('fa').format('YYYY/MM/DD HH:mm');
                     step.done = true;
-                    step.date = now;
-                    step.finishNote = fNote ? `گزارش نهایی: ${fNote}` : 'بدون گزارش نهایی';
-                    save();
+                    step.date = moment().locale('fa').format('YYYY/MM/DD HH:mm');
+                    step.finishNote = fNote ? `گزارش نهایی: ${fNote}` : 'پایان یافت';
+                    saveData();
                 }
             } else {
-                if(confirm("آیا می‌خواهید این مرحله را از حالت پایان خارج کنید؟")) {
+                if(confirm("لغو وضعیت پایان؟")) {
                     step.done = false;
-                    step.date = '';
                     step.finishNote = '';
-                    save();
+                    saveData();
                 }
             }
         }
 
         function deleteProject(projId) {
-            if(confirm("پروژه حذف شود؟")) {
+            if(confirm("حذف کامل پروژه؟")) {
                 projects = projects.filter(p => p.id !== projId);
-                save();
+                saveData();
             }
         }
 
@@ -109,43 +118,40 @@
             const container = document.getElementById('projectList');
             container.innerHTML = '';
             projects.forEach(proj => {
-                let html = `
+                container.innerHTML += `
                     <div class="project-box">
                         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <span style="font-weight:bold; color:#1a73e8;">📌 ${proj.name}</span>
-                            <button style="color:#bbb; background:none; font-size:10px;" onclick="deleteProject(${proj.id})">حذف</button>
+                            <span style="font-weight:bold; color:#1a73e8;">🛠 ${proj.name}</span>
+                            <button style="color:#ccc; background:none; font-size:10px;" onclick="deleteProject(${proj.id})">حذف</button>
                         </div>
                         <div class="input-group">
-                            <input type="text" id="input-${proj.id}" placeholder="مرحله جدید...">
+                            <input type="text" id="input-${proj.id}" placeholder="افزودن مرحله...">
                             <button style="background:#34a853; color:white;" onclick="addStep(${proj.id})">+</button>
                         </div>
-                        <div>
-                            ${proj.steps.map((step, idx) => `
-                                <div class="step-item">
-                                    <div class="step-main">
-                                        <div style="display:flex; flex-direction:column;">
-                                            <span style="${step.done ? 'text-decoration:line-through; color:#888;' : 'font-weight:bold;'}">${step.name}</span>
-                                            <span class="time-label">${step.date ? '🏁 پایان: ' + step.date : '⏳ در حال اجرا...'}</span>
-                                        </div>
-                                        <div>
-                                            <button class="btn-note" onclick="addGeneralNote(${proj.id}, ${idx})">📝 یادداشت</button>
-                                            <button class="btn-finish ${step.done ? 'is-done' : ''}" onclick="finishStep(${proj.id}, ${idx})">
-                                                ${step.done ? '✅ تمام شد' : '🏁 پایان کار'}
-                                            </button>
-                                        </div>
+                        ${proj.steps.map((step, idx) => `
+                            <div class="step-item">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <div style="${step.done ? 'text-decoration:line-through; color:#888;' : ''}">${step.name}</div>
+                                        <div style="font-size:9px; color:#999;">${step.date}</div>
                                     </div>
-                                    <div class="note-area">
-                                        ${step.note ? `<div class="note-general">💬 ${step.note}</div>` : ''}
-                                        ${step.finishNote ? `<div class="note-finish">📋 ${step.finishNote}</div>` : ''}
+                                    <div>
+                                        <button class="btn-note" onclick="addGeneralNote(${proj.id}, ${idx})">📝</button>
+                                        <button class="${step.done ? 'is-done' : ''}" style="border:1px solid #ddd; padding:5px 10px; border-radius:5px;" onclick="finishStep(${proj.id}, ${idx})">
+                                            ${step.done ? '✅' : '🏁 پایان'}
+                                        </button>
                                     </div>
                                 </div>
-                            `).join('')}
-                        </div>
+                                <div class="note-area">
+                                    ${step.note ? `<div class="note-general">💬 ${step.note}</div>` : ''}
+                                    ${step.finishNote ? `<div class="note-finish">📋 ${step.finishNote}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>`;
-                container.innerHTML += html;
             });
         }
-        render();
+        loadData();
     </script>
 </body>
 </html>
