@@ -11,7 +11,7 @@
     <style>
         body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
         .header-box { text-align: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { width: 100px; height: auto; margin-bottom: 10px; }
+        .logo { width: 120px; height: auto; margin-bottom: 10px; }
         .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
         input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
         button { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
@@ -22,44 +22,42 @@
         .note-general { color: #555; background: #f9f9f9; padding: 5px; border-radius: 4px; border-right: 3px solid #ccc; }
         .note-finish { color: #0d652d; background: #e6f4ea; padding: 5px; border-radius: 4px; border-right: 3px solid #34a853; margin-top: 3px; }
         .is-done { background: #ceead6 !important; color: #0d652d !important; }
-        .loading { text-align: center; color: #666; font-size: 12px; margin-bottom: 10px; }
+        .loading { text-align: center; color: #666; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
-
     <div class="header-box">
-        <img src="logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/100?text=MAHBUBI'">
-        <div id="status" class="loading">در حال اتصال به سرور...</div>
+        <img src="logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/120?text=MAHBUBI'">
+        <div id="status" class="loading">⏳ در حال اتصال...</div>
         <div class="input-group">
-            <input type="text" id="newProj" placeholder="نام پروژه جدید (مثلاً تجهیزات ۱)...">
+            <input type="text" id="newProj" placeholder="نام پروژه جدید...">
             <button class="btn-main" onclick="addProject()">ساخت پروژه</button>
         </div>
     </div>
-
     <div id="projectList"></div>
 
     <script>
-        // تنظیمات Supabase شما (استخراج شده از تصویر)
         const SB_URL = "https://pffgmrzntpxfyxltltyx.supabase.co";
-        const SB_KEY = "YOUR_ANON_KEY"; // اینجا باید API KEY (anon public) را کپی کنید
-        const supabase = supabase.createClient(SB_URL, SB_KEY);
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmZmdtcnpudHB4Znl4bHRsdHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1ODc1ODYsImV4cCI6MjA4MjE2MzU4Nn0.JddeE-vNE74Lhe2T9tCtZ3C94lQFtINvkZit5q0ah7Y"; 
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
         let projects = [];
 
         async function loadData() {
-            document.getElementById('status').innerText = "⏳ در حال دریافت اطلاعات...";
-            const { data, error } = await supabase.from('workshop_data').select('projects_json').eq('id', 1).single();
+            const { data, error } = await _supabase.from('workshop_data').select('projects_json').eq('id', 1).maybeSingle();
             if (data) {
-                projects = data.projects_json;
+                projects = data.projects_json || [];
                 render();
-                document.getElementById('status').innerText = "✅ همگام‌سازی شد";
+                document.getElementById('status').innerText = "✅ همگام‌سازی آنلاین فعال است";
+            } else {
+                document.getElementById('status').innerText = "⚠️ لطفاً جدول SQL را در Supabase بسازید";
             }
         }
 
         async function saveData() {
-            document.getElementById('status').innerText = "☁️ در حال ذخیره روی سرور...";
-            await supabase.from('workshop_data').update({ projects_json: projects }).eq('id', 1);
-            document.getElementById('status').innerText = "✅ تغییرات ذخیره شد";
+            document.getElementById('status').innerText = "☁️ در حال ذخیره...";
+            await _supabase.from('workshop_data').update({ projects_json: projects }).eq('id', 1);
+            document.getElementById('status').innerText = "✅ ذخیره شد";
             render();
         }
 
@@ -132,7 +130,7 @@
                             <div class="step-item">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
                                     <div>
-                                        <div style="${step.done ? 'text-decoration:line-through; color:#888;' : ''}">${step.name}</div>
+                                        <div style="${step.done ? 'text-decoration:line-through; color:#888;' : 'font-weight:bold;'}">${step.name}</div>
                                         <div style="font-size:9px; color:#999;">${step.date}</div>
                                     </div>
                                     <div>
