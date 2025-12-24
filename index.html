@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مدیریت پروژه صنعتی</title>
+    <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
+    <style>
+        body { font-family: Tahoma, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #333; color: white; }
+        .done { background-color: #d4edda; color: #155724; font-weight: bold; }
+        .pending { cursor: pointer; color: #999; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        input, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+        button { background-color: #28a745; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>📋 لیست پیگیری پروژه‌ها</h2>
+    
+    <div class="controls">
+        <input type="text" id="projName" placeholder="نام پروژه جدید">
+        <button onclick="addProject()">➕ افزودن پروژه</button>
+        <input type="text" id="stepName" placeholder="مرحله جدید (مثلاً برش)">
+        <button onclick="addStep()" style="background-color: #007bff;">📐 افزودن مرحله</button>
+    </div>
+
+    <table id="mainTable">
+        <thead>
+            <tr id="headerRow">
+                <th>نام پروژه</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        const steps = [];
+        const projects = [];
+
+        function addStep() {
+            const name = document.getElementById('stepName').value;
+            if(!name) return;
+            steps.push(name);
+            const header = document.getElementById('headerRow');
+            const th = document.createElement('th');
+            th.innerText = name;
+            header.appendChild(th);
+            renderTable();
+            document.getElementById('stepName').value = '';
+        }
+
+        function addProject() {
+            const name = document.getElementById('projName').value;
+            if(!name) return;
+            projects.push({ name: name, status: {} });
+            renderTable();
+            document.getElementById('projName').value = '';
+        }
+
+        function toggleStep(pIndex, sIndex) {
+            const p = projects[pIndex];
+            if (!p.status[sIndex]) {
+                const date = moment().locale('fa').format('YYYY/MM/DD');
+                p.status[sIndex] = `✅ انجام شد\n(${date})`;
+            } else {
+                delete p.status[sIndex];
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            const body = document.getElementById('tableBody');
+            body.innerHTML = '';
+            projects.forEach((proj, pIdx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><b>${proj.name}</b></td>`;
+                steps.forEach((step, sIdx) => {
+                    const status = proj.status[sIdx] || '---';
+                    const className = proj.status[sIdx] ? 'done' : 'pending';
+                    tr.innerHTML += `<td class="${className}" onclick="toggleStep(${pIdx}, ${sIdx})">${status.replace('\n', '<br>')}</td>`;
+                });
+                body.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
