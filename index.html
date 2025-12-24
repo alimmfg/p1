@@ -3,33 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت اختصاصی پروژه‌ها</title>
+    <title>مدیریت پروژه</title>
+    <link rel="apple-touch-icon" href="logo.jpg">
+    <link rel="icon" href="logo.jpg">
+    
     <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
     <style>
         body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { text-align: center; color: #1a73e8; font-size: 20px; }
+        .header-box { text-align: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logo { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 3px solid #1a73e8; margin-bottom: 10px; }
         .input-group { display: flex; gap: 5px; margin-bottom: 15px; }
         input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
         button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
         .btn-main { background: #1a73e8; color: white; }
         .project-box { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .project-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; display: block; color: #333; }
         .step-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; }
-        .step-item:last-child { border: none; }
-        .step-info { display: flex; flex-direction: column; }
-        .date { font-size: 11px; color: #888; }
-        .done-btn { background: #e8f0fe; color: #1a73e8; font-size: 12px; }
-        .is-done { background: #ceead6; color: #0d652d; }
-        .delete-btn { background: #fce8e6; color: #d93025; font-size: 11px; margin-right: 5px; }
+        .is-done { background: #ceead6 !important; color: #0d652d !important; }
+        .delete-btn { background: #fce8e6; color: #d93025; font-size: 11px; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>🏗️ مدیریت پروژه‌های فنی</h2>
+    <div class="header-box">
+        <img src="logo.jpg" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/80?text=LOGO'">
         <div class="input-group">
-            <input type="text" id="newProj" placeholder="نام پروژه جدید را بنویسید...">
+            <input type="text" id="newProj" placeholder="نام پروژه جدید...">
             <button class="btn-main" onclick="addProject()">ساخت پروژه</button>
         </div>
     </div>
@@ -79,37 +77,34 @@
         function render() {
             const container = document.getElementById('projectList');
             container.innerHTML = '';
-
             projects.forEach(proj => {
                 let html = `
                     <div class="project-box">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span class="project-title">${proj.name}</span>
-                            <button class="delete-btn" onclick="deleteProject(${proj.id})">حذف پروژه</button>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <span style="font-weight:bold;">${proj.name}</span>
+                            <button class="delete-btn" onclick="deleteProject(${proj.id})">حذف</button>
                         </div>
                         <div class="input-group">
-                            <input type="text" id="input-${proj.id}" placeholder="افزودن مرحله جدید...">
+                            <input type="text" id="input-${proj.id}" placeholder="افزودن مرحله...">
                             <button style="background:#34a853; color:white;" onclick="addStep(${proj.id})">+</button>
                         </div>
                         <div>
                             ${proj.steps.map((step, idx) => `
                                 <div class="step-item">
-                                    <div class="step-info">
+                                    <div style="display:flex; flex-direction:column;">
                                         <span>${step.name}</span>
-                                        <span class="date">${step.date}</span>
+                                        <small style="color:#888;">${step.date}</small>
                                     </div>
-                                    <button class="done-btn ${step.done ? 'is-done' : ''}" onclick="toggleStep(${proj.id}, ${idx})">
-                                        ${step.done ? '✅ انجام شد' : 'ثبت انجام'}
+                                    <button style="background:#e8f0fe; color:#1a73e8;" class="${step.done ? 'is-done' : ''}" onclick="toggleStep(${proj.id}, ${idx})">
+                                        ${step.done ? '✅' : 'ثبت'}
                                     </button>
                                 </div>
                             `).join('')}
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 container.innerHTML += html;
             });
         }
-
         render();
     </script>
 </body>
