@@ -1,91 +1,116 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>مدیریت پروژه صنعتی</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت اختصاصی پروژه‌ها</title>
     <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f4f4f4; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #333; color: white; }
-        .done { background-color: #d4edda; color: #155724; font-weight: bold; }
-        .pending { cursor: pointer; color: #999; }
-        .controls { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-        input, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background-color: #28a745; color: white; cursor: pointer; }
+        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { text-align: center; color: #1a73e8; font-size: 20px; }
+        .input-group { display: flex; gap: 5px; margin-bottom: 15px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
+        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
+        .btn-main { background: #1a73e8; color: white; }
+        .project-box { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .project-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; display: block; color: #333; }
+        .step-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; }
+        .step-item:last-child { border: none; }
+        .step-info { display: flex; flex-direction: column; }
+        .date { font-size: 11px; color: #888; }
+        .done-btn { background: #e8f0fe; color: #1a73e8; font-size: 12px; }
+        .is-done { background: #ceead6; color: #0d652d; }
+        .delete-btn { background: #fce8e6; color: #d93025; font-size: 11px; margin-right: 5px; }
     </style>
 </head>
 <body>
 
-    <h2>📋 لیست پیگیری پروژه‌ها</h2>
-    
-    <div class="controls">
-        <input type="text" id="projName" placeholder="نام پروژه جدید">
-        <button onclick="addProject()">➕ افزودن پروژه</button>
-        <input type="text" id="stepName" placeholder="مرحله جدید (مثلاً برش)">
-        <button onclick="addStep()" style="background-color: #007bff;">📐 افزودن مرحله</button>
+    <div class="card">
+        <h2>🏗️ مدیریت پروژه‌های فنی</h2>
+        <div class="input-group">
+            <input type="text" id="newProj" placeholder="نام پروژه جدید را بنویسید...">
+            <button class="btn-main" onclick="addProject()">ساخت پروژه</button>
+        </div>
     </div>
 
-    <table id="mainTable">
-        <thead>
-            <tr id="headerRow">
-                <th>نام پروژه</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <div id="projectList"></div>
 
     <script>
-        const steps = [];
-        const projects = [];
+        let projects = JSON.parse(localStorage.getItem('tech_factory_db')) || [];
 
-        function addStep() {
-            const name = document.getElementById('stepName').value;
-            if(!name) return;
-            steps.push(name);
-            const header = document.getElementById('headerRow');
-            const th = document.createElement('th');
-            th.innerText = name;
-            header.appendChild(th);
-            renderTable();
-            document.getElementById('stepName').value = '';
+        function save() {
+            localStorage.setItem('tech_factory_db', JSON.stringify(projects));
+            render();
         }
 
         function addProject() {
-            const name = document.getElementById('projName').value;
+            let name = document.getElementById('newProj').value;
             if(!name) return;
-            projects.push({ name: name, status: {} });
-            renderTable();
-            document.getElementById('projName').value = '';
+            projects.push({ id: Date.now(), name: name, steps: [] });
+            document.getElementById('newProj').value = '';
+            save();
         }
 
-        function toggleStep(pIndex, sIndex) {
-            const p = projects[pIndex];
-            if (!p.status[sIndex]) {
-                const date = moment().locale('fa').format('YYYY/MM/DD');
-                p.status[sIndex] = `✅ انجام شد\n(${date})`;
-            } else {
-                delete p.status[sIndex];
+        function addStep(projId) {
+            let input = document.getElementById('input-' + projId);
+            if(!input.value) return;
+            let proj = projects.find(p => p.id === projId);
+            proj.steps.push({ name: input.value, done: false, date: '' });
+            input.value = '';
+            save();
+        }
+
+        function toggleStep(projId, stepIdx) {
+            let proj = projects.find(p => p.id === projId);
+            let step = proj.steps[stepIdx];
+            step.done = !step.done;
+            step.date = step.done ? moment().locale('fa').format('YYYY/MM/DD HH:mm') : '';
+            save();
+        }
+
+        function deleteProject(projId) {
+            if(confirm("پروژه حذف شود؟")) {
+                projects = projects.filter(p => p.id !== projId);
+                save();
             }
-            renderTable();
         }
 
-        function renderTable() {
-            const body = document.getElementById('tableBody');
-            body.innerHTML = '';
-            projects.forEach((proj, pIdx) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>${proj.name}</b></td>`;
-                steps.forEach((step, sIdx) => {
-                    const status = proj.status[sIdx] || '---';
-                    const className = proj.status[sIdx] ? 'done' : 'pending';
-                    tr.innerHTML += `<td class="${className}" onclick="toggleStep(${pIdx}, ${sIdx})">${status.replace('\n', '<br>')}</td>`;
-                });
-                body.appendChild(tr);
+        function render() {
+            const container = document.getElementById('projectList');
+            container.innerHTML = '';
+
+            projects.forEach(proj => {
+                let html = `
+                    <div class="project-box">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span class="project-title">${proj.name}</span>
+                            <button class="delete-btn" onclick="deleteProject(${proj.id})">حذف پروژه</button>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="input-${proj.id}" placeholder="افزودن مرحله جدید...">
+                            <button style="background:#34a853; color:white;" onclick="addStep(${proj.id})">+</button>
+                        </div>
+                        <div>
+                            ${proj.steps.map((step, idx) => `
+                                <div class="step-item">
+                                    <div class="step-info">
+                                        <span>${step.name}</span>
+                                        <span class="date">${step.date}</span>
+                                    </div>
+                                    <button class="done-btn ${step.done ? 'is-done' : ''}" onclick="toggleStep(${proj.id}, ${idx})">
+                                        ${step.done ? '✅ انجام شد' : 'ثبت انجام'}
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
             });
         }
+
+        render();
     </script>
 </body>
-
 </html>
