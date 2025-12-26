@@ -4,23 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f0f0f0; padding: 10px; direction: rtl; }
-        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        input { width: 60%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
+        .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
         .btn-p { background: #28a745; color: white; }
         .btn-s { background: #007bff; color: white; }
+        .btn-edit { background: #f39c12; color: white; font-size: 10px; padding: 4px 8px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #000; padding: 10px; text-align: center; vertical-align: top; }
-        th { background: #333; color: white; }
-        .log-box { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.5; }
-        .date { color: #d35400; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; }
+        th { background: #34495e; color: white; }
+        .log-box { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.5; min-height: 40px; }
+        .date { color: #d35400; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 4px; }
+        .hr-line { border: 0; border-top: 1px solid #eee; margin: 5px 0; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h3 style="text-align:center">سامانه مدیریت کارگاه</h3>
+    <h3 style="text-align:center">🛠 مدیریت هوشمند کارگاه</h3>
     
     <input type="text" id="p_in" placeholder="نام پروژه جدید">
     <button class="btn-p" onclick="addP()">+ پروژه</button>
@@ -29,35 +31,38 @@
     <button class="btn-s" onclick="addS()">+ مرحله</button>
 
     <div style="overflow-x: auto;">
-        <table id="tbl">
+        <table>
             <thead id="thead"></thead>
             <tbody id="tbody"></tbody>
         </table>
     </div>
+
+    <div style="margin-top: 25px; display: flex; gap: 10px;">
+        <button onclick="exportData()" style="flex: 1; background:#6f42c1; color:white;">💾 دانلود پشتیبان</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#dc3545; color:white;">📥 بارگذاری فایل</button>
+        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
+    </div>
 </div>
 
 <script>
-    // استفاده از اسامی جدید برای متغیرها جهت جلوگیری از تداخل
-    var myPrjs = JSON.parse(localStorage.getItem('FINAL_PRJS_99')) || [];
-    var myStps = JSON.parse(localStorage.getItem('FINAL_STPS_99')) || [];
+    var myPrjs = JSON.parse(localStorage.getItem('WORKSHOP_ULTIMATE')) || [];
+    var myStps = JSON.parse(localStorage.getItem('STEPS_ULTIMATE')) || [];
 
     function updateView() {
-        localStorage.setItem('FINAL_PRJS_99', JSON.stringify(myPrjs));
-        localStorage.setItem('FINAL_STPS_99', JSON.stringify(myStps));
+        localStorage.setItem('WORKSHOP_ULTIMATE', JSON.stringify(myPrjs));
+        localStorage.setItem('STEPS_ULTIMATE', JSON.stringify(myStps));
 
-        // رسم هدر
         var h = document.getElementById('thead');
-        var hHtml = '<tr><th>نام پروژه</th>';
+        var hHtml = '<tr><th>پروژه</th>';
         for(var i=0; i<myStps.length; i++) {
-            hHtml += '<th>' + myStps[i] + '</th>';
+            hHtml += '<th>' + myStps[i] + ' <br><button onclick="delStep('+i+')" style="background:none;color:red;font-size:9px">[حذف]</button></th>';
         }
         h.innerHTML = hHtml + '</tr>';
 
-        // رسم بدنه
         var b = document.getElementById('tbody');
         var bHtml = '';
         for(var j=0; j<myPrjs.length; j++) {
-            bHtml += '<tr><td><b>' + myPrjs[j].n + '</b></td>';
+            bHtml += '<tr><td><b id="pName_'+j+'">' + myPrjs[j].n + '</b><br><button class="btn-edit" onclick="editP('+j+')">ویرایش نام</button></td>';
             for(var k=0; k<myStps.length; k++) {
                 var content = myPrjs[j].c[k] || "---";
                 bHtml += '<td onclick="writeLog('+j+','+k+')"><div class="log-box">' + content + '</div></td>';
@@ -85,24 +90,4 @@
         }
     }
 
-    function writeLog(pIdx, sIdx) {
-        var msg = prompt("یادداشت جدید:");
-        if(msg) {
-            var now = new Date();
-            var d = now.toLocaleDateString('fa-IR');
-            var t = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
-            
-            var newEntry = '<span class="date">' + d + ' - ' + t + '</span>' + msg + '<br><hr>';
-            
-            // اضافه کردن به یادداشت قبلی بدون پاک کردن آن
-            if(!myPrjs[pIdx].c[sIdx]) myPrjs[pIdx].c[sIdx] = "";
-            myPrjs[pIdx].c[sIdx] = newEntry + myPrjs[pIdx].c[sIdx];
-            
-            updateView();
-        }
-    }
-
-    updateView();
-</script>
-</body>
-</html>
+    function editP(i) {
