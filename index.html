@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت هوشمند پروژه</title>
+    <title>مدیریت هوشمند پروژه v4</title>
     <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; padding: 15px; margin: 0; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
         .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: #eee; padding: 15px; border-radius: 10px; }
         input { padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; flex: 1; min-width: 150px; }
@@ -15,19 +15,23 @@
         .btn-p { background-color: #27ae60; color: white; }
         .btn-s { background-color: #2980b9; color: white; }
         table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-        th, td { border: 1px solid #dcdde1; padding: 12px; text-align: center; min-width: 120px; }
-        th { background-color: #34495e; color: white; }
-        .cell-note { cursor: pointer; background-color: #fff; transition: 0.2s; font-size: 13px; }
+        th, td { border: 1px solid #dcdde1; padding: 10px; text-align: center; min-width: 130px; vertical-align: middle; }
+        th { background-color: #34495e; color: white; position: sticky; top: 0; }
+        /* استایل یادداشت برای پشتیبانی از اینتر */
+        .cell-note { cursor: pointer; background-color: #fff; white-space: pre-wrap; font-size: 13px; line-height: 1.5; }
         .cell-note:hover { background-color: #f1f2f6; }
         .has-data { background-color: #e1f5fe !important; border-right: 4px solid #03a9f4; }
+        /* استایل پروژه تمام شده */
+        .project-completed { background-color: #2ecc71 !important; color: white !important; }
+        .project-completed td { background-color: #2ecc71 !important; color: white !important; border-color: #27ae60; }
         .del-btn { color: #e74c3c; cursor: pointer; font-size: 11px; display: block; margin-top: 5px; text-decoration: underline; }
-        .edit-hint { font-size: 9px; color: #95a5a6; display: block; }
+        .finish-btn { background: #f39c12; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: inline-block; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🛠 سامانه مدیریت کارگاه</h2>
+    <h2>🛠 مدیریت تولید و اتمام پروژه</h2>
     
     <div class="controls">
         <input type="text" id="pInput" placeholder="نام پروژه جدید...">
@@ -47,71 +51,21 @@
 </div>
 
 <script>
-    let steps = JSON.parse(localStorage.getItem('steps_v3')) || [];
-    let projs = JSON.parse(localStorage.getItem('projs_v3')) || [];
+    let steps = JSON.parse(localStorage.getItem('steps_v4')) || [];
+    let projs = JSON.parse(localStorage.getItem('projs_v4')) || [];
 
     function save() {
-        localStorage.setItem('steps_v3', JSON.stringify(steps));
-        localStorage.setItem('projs_v3', JSON.stringify(projs));
+        localStorage.setItem('steps_v4', JSON.stringify(steps));
+        localStorage.setItem('projs_v4', JSON.stringify(projs));
         render();
     }
 
-    function addS() { const v = document.getElementById('sInput').value; if(v){ steps.push(v); document.getElementById('sInput').value=''; save(); } }
-    function addP() { const v = document.getElementById('pInput').value; if(v){ projs.push({n:v, d:{}}); document.getElementById('pInput').value=''; save(); } }
+    function addS() { const v = document.getElementById('sInput').value; if(v){ steps.push(v); save(); document.getElementById('sInput').value=''; } }
+    function addP() { const v = document.getElementById('pInput').value; if(v){ projs.push({n:v, d:{}, finished: false}); save(); document.getElementById('pInput').value=''; } }
 
-    function delS(idx) { if(confirm("این مرحله و تمام یادداشت‌های آن حذف شود؟")){ steps.splice(idx, 1); projs.forEach(p => delete p.d[idx]); save(); } }
-    function delP(idx) { if(confirm("این پروژه حذف شود؟")){ projs.splice(idx, 1); save(); } }
+    function delS(idx) { if(confirm("حذف مرحله؟")){ steps.splice(idx, 1); projs.forEach(p => delete p.d[idx]); save(); } }
+    function delP(idx) { if(confirm("حذف پروژه؟")){ projs.splice(idx, 1); save(); } }
 
-    function editCell(pIdx, sIdx) {
-        const p = projs[pIdx];
-        const oldData = p.d[sIdx] || {txt: "", dt: moment().locale('fa').format('YYYY/MM/DD')};
-        
-        const newTxt = prompt("متن یادداشت را وارد کنید:", oldData.txt);
-        if (newTxt === null) return;
-
-        const newDt = prompt("تاریخ را وارد یا اصلاح کنید:", oldData.dt);
-        if (newDt === null) return;
-
-        if(newTxt.trim() === "" && newDt.trim() === "") {
-            delete p.d[sIdx];
-        } else {
-            p.d[sIdx] = { txt: newTxt, dt: newDt };
-        }
-        save();
-    }
-
-    function editHeader(idx, type) {
-        if(type === 's') {
-            const n = prompt("نام جدید مرحله:", steps[idx]);
-            if(n) { steps[idx] = n; save(); }
-        } else {
-            const n = prompt("نام جدید پروژه:", projs[idx].n);
-            if(n) { projs[idx].n = n; save(); }
-        }
-    }
-
-    function render() {
-        const hr = document.getElementById('hRow');
-        hr.innerHTML = '<th>پروژه</th>';
-        steps.forEach((s, i) => {
-            hr.innerHTML += `<th><span onclick="editHeader(${i},'s')">${s}</span><span class="del-btn" onclick="delS(${i})">حذف مرحله</span></th>`;
-        });
-
-        const tb = document.getElementById('tBody');
-        tb.innerHTML = '';
-        projs.forEach((p, pi) => {
-            let r = `<tr><td><b onclick="editHeader(${pi},'p')">${p.n}</b><span class="del-btn" onclick="delP(${pi})">حذف پروژه</span></td>`;
-            steps.forEach((s, si) => {
-                const data = p.d[si];
-                const display = data ? `<b>${data.txt}</b><br><small>${data.dt}</small>` : '<span style="color:#ccc">ثبت یادداشت</span>';
-                const cls = data ? 'has-data' : '';
-                r += `<td class="cell-note ${cls}" onclick="editCell(${pi}, ${si})">${display}</td>`;
-            });
-            r += '</tr>';
-            tb.innerHTML += r;
-        });
-    }
-    render();
-</script>
-</body>
-</html>
+    // تغییر وضعیت اتمام پروژه
+    function toggleFinish(idx) {
+        projs[idx].finished = !projs[idx].finished;
