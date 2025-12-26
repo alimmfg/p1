@@ -6,76 +6,73 @@
     <style>
         body { font-family: Tahoma, sans-serif; background: #f4f7f6; padding: 10px; direction: rtl; }
         .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .header { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; margin-bottom: 15px; padding-bottom: 10px; }
-        input { padding: 12px; width: 65%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
-        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
+        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
+        button { padding: 8px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
         .btn-p { background: #27ae60; color: white; }
         .btn-s { background: #2980b9; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #333; padding: 10px; text-align: center; vertical-align: top; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: center; vertical-align: top; }
         th { background: #34495e; color: white; }
-        .log-box { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.6; min-height: 50px; cursor: pointer; padding: 5px; }
-        .date-tag { color: #d35400; font-weight: bold; font-size: 10px; display: block; background: #eee; padding: 2px; margin-bottom: 4px; }
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
-        .edit-btn { font-size: 10px; background: #f39c12; color: white; padding: 4px; margin-top: 5px; width: 100%; }
-        /* استایل‌های اتمام */
-        .done-row { background: #d4edda !important; } /* سبز برای پروژه تمام شده */
-        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; } /* آبی برای مرحله تمام شده */
-        .finish-btn { font-size: 9px; background: #34495e; color: white; padding: 3px; margin-top: 3px; width: 100%; }
+        /* استایل یادداشت‌های تفکیک شده */
+        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 5px; margin-bottom: 5px; border-radius: 4px; text-align: right; font-size: 11px; position: relative; }
+        .date-tag { color: #d35400; font-weight: bold; font-size: 9px; display: block; margin-bottom: 3px; border-bottom: 1px solid #ddd; }
+        /* وضعیت‌های اتمام */
+        .done-row { background: #d4edda !important; } 
+        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
+        .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; }
+        .btn-edit { background: #f39c12; color: white; font-size: 10px; width: 100%; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div class="header"><h2>📋 مدیریت هوشمند کارگاه</h2></div>
-    
+    <h2 style="text-align:center; color:#2c3e50;">مدیریت کارگاه</h2>
     <input type="text" id="p_in" placeholder="نام پروژه">
-    <button class="btn-p" onclick="addP()">+ پروژه جدید</button>
+    <button class="btn-p" onclick="addP()">+ پروژه</button>
     <br>
     <input type="text" id="s_in" placeholder="نام مرحله">
-    <button class="btn-s" onclick="addS()">+ مرحله جدید</button>
+    <button class="btn-s" onclick="addS()">+ مرحله</button>
 
     <div style="overflow-x: auto;">
-        <table>
+        <table id="mainTable">
             <thead id="thead"></thead>
             <tbody id="tbody"></tbody>
         </table>
     </div>
 
-    <div class="controls">
-        <button onclick="exportData()" style="flex: 1; background:#8e44ad; color:white;">💾 دانلود فایل پشتیبان</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#c0392b; color:white;">📥 بارگذاری فایل</button>
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white;">💾 دانلود پشتیبان</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white;">📥 بارگذاری فایل</button>
         <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
     </div>
 </div>
 
 <script>
-    var prjs = JSON.parse(localStorage.getItem('WORKSHOP_ULTRA_V3')) || [];
-    var stps = JSON.parse(localStorage.getItem('STEPS_ULTRA_V3')) || [];
+    var prjs = JSON.parse(localStorage.getItem('WORKSHOP_V30')) || [];
+    var stps = JSON.parse(localStorage.getItem('STEPS_V30')) || [];
 
     function refresh() {
-        localStorage.setItem('WORKSHOP_ULTRA_V3', JSON.stringify(prjs));
-        localStorage.setItem('STEPS_ULTRA_V3', JSON.stringify(stps));
+        localStorage.setItem('WORKSHOP_V30', JSON.stringify(prjs));
+        localStorage.setItem('STEPS_V30', JSON.stringify(stps));
 
         var h = document.getElementById('thead');
-        var hHtml = '<tr><th>اطلاعات پروژه</th>';
-        for(var i=0; i<stps.length; i++) {
-            hHtml += '<th>' + stps[i] + ' <br><button onclick="delS('+i+')" style="background:none;color:red;font-size:9px">حذف</button></th>';
-        }
+        var hHtml = '<tr><th>پروژه</th>';
+        for(var i=0; i<stps.length; i++) hHtml += '<th>' + stps[i] + '</th>';
         h.innerHTML = hHtml + '</tr>';
 
         var b = document.getElementById('tbody');
         var bHtml = '';
         for(var j=0; j<prjs.length; j++) {
-            var rowClass = prjs[j].f ? 'done-row' : '';
-            bHtml += '<tr class="'+rowClass+'">';
-            bHtml += '<td><b>' + prjs[j].n + '</b>' +
-                     '<button class="edit-btn" onclick="editPName('+j+')">ویرایش نام</button>' +
-                     '<button class="finish-btn" onclick="togglePFinish('+j+')">' + (prjs[j].f ? 'بازگشت' : '✓ پایان پروژه') + '</button>' +
-                     '<button class="edit-btn" style="background:#e74c3c" onclick="delP('+j+')">حذف</button></td>';
+            var rClass = prjs[j].f ? 'done-row' : '';
+            bHtml += '<tr class="'+rClass+'"><td><b>'+prjs[j].n+'</b>' +
+                     '<button class="btn-edit" onclick="editP('+j+')">ویرایش نام</button>' +
+                     '<button class="btn-finish" onclick="finishP('+j+')">'+(prjs[j].f?'بازگشت':'✓ پایان پروژه')+'</button></td>';
             
             for(var k=0; k<stps.length; k++) {
-                var cellData = prjs[j].c[k] || {t:'', f:false};
-                var cellClass = cellData.f ? 'done-cell' : '';
-                bHtml += '<td class="'+cellClass+'">' +
-                         '<div class="log-box" onclick="editLog('+j+','+k+')">' + (cellData.t || "
+                var cell = prjs[j].c[k] || {logs:[], f:false};
+                var cClass = cell.f ? 'done-cell' : '';
+                var logsHtml = '';
+                for(var m=0; m<cell.logs.length; m++) {
+                    logsHtml += '<div class="log-item"><span class="date-tag">'+cell.logs[m].d+'</span>'+cell.logs[m].t+'</div>';
+                }
+                bHtml
