@@ -12,14 +12,15 @@
         .btn-s { background: #2980b9; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #333; padding: 8px; text-align: center; vertical-align: top; }
-        th { background: #34495e; color: white; position: relative; }
-        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 11px; box-shadow: 1px 1px 3px rgba(0,0,0,0.05); }
+        th { background: #34495e; color: white; position: sticky; top: 0; }
+        .clickable { cursor: pointer; transition: 0.2s; }
+        .clickable:hover { background: rgba(0,0,0,0.05); color: #e67e22; }
+        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; }
         .date-tag { color: #d35400; font-weight: bold; font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; }
         .done-row { background: #d4edda !important; } 
         .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
         .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; }
-        .btn-edit { background: #f39c12; color: white; font-size: 10px; width: 100%; margin-top: 5px; }
-        .edit-step { background: #f39c12; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; display: block; margin: 3px auto; }
+        .del-x { color: #ff7675; cursor: pointer; font-size: 10px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -47,90 +48,4 @@
 </div>
 
 <script>
-    var prjs = JSON.parse(localStorage.getItem('K_DATA_V4')) || [];
-    var stps = JSON.parse(localStorage.getItem('S_DATA_V4')) || [];
-
-    function refresh() {
-        localStorage.setItem('K_DATA_V4', JSON.stringify(prjs));
-        localStorage.setItem('S_DATA_V4', JSON.stringify(stps));
-
-        var h = document.getElementById('thead');
-        var hHtml = '<tr><th>اطلاعات پروژه</th>';
-        for(var i=0; i<stps.length; i++) {
-            hHtml += '<th>' + stps[i] + 
-                     '<button class="edit-step" onclick="editS('+i+')">ویرایش</button>' +
-                     '<button onclick="delS('+i+')" style="background:none;color:white;font-size:10px">[حذف]</button></th>';
-        }
-        h.innerHTML = hHtml + '</tr>';
-
-        var b = document.getElementById('tbody');
-        var bHtml = '';
-        for(var j=0; j<prjs.length; j++) {
-            var rClass = prjs[j].f ? 'done-row' : '';
-            bHtml += '<tr class="'+rClass+'"><td><b>'+prjs[j].n+'</b>' +
-                     '<button class="btn-edit" onclick="editP('+j+')">ویرایش نام</button>' +
-                     '<button class="btn-finish" onclick="finishP('+j+')">'+(prjs[j].f?'↩ بازگشت':'✓ پایان پروژه')+'</button>' +
-                     '<button class="btn-finish" style="background:#e74c3c" onclick="delP('+j+')">حذف</button></td>';
-            
-            for(var k=0; k<stps.length; k++) {
-                var cell = prjs[j].c[k] || {logs:[], f:false};
-                var cClass = cell.f ? 'done-cell' : '';
-                var logsHtml = '';
-                for(var m=0; m<cell.logs.length; m++) {
-                    logsHtml += '<div class="log-item" onclick="editSingleLog('+j+','+k+','+m+')"><span class="date-tag">'+cell.logs[m].d+'</span>'+cell.logs[m].t+'</div>';
-                }
-                bHtml += '<td class="'+cClass+'">' +
-                         '<div style="min-height:50px" onclick="addLog('+j+','+k+')">' + (logsHtml || '<small style="color:#ccc">کلیک برای یادداشت</small>') + '</div>' +
-                         '<button class="btn-finish" style="background:#2980b9" onclick="finishS('+j+','+k+')">'+(cell.f?'↩':'✅ اتمام مرحله')+'</button></td>';
-            }
-            bHtml += '</tr>';
-        }
-        b.innerHTML = bHtml;
-    }
-
-    function addP() { var v = document.getElementById('p_in').value; if(v.trim()){ prjs.push({n:v, c:{}, f:false}); document.getElementById('p_in').value=""; refresh(); } }
-    function addS() { var v = document.getElementById('s_in').value; if(v.trim()){ stps.push(v); document.getElementById('s_in').value=""; refresh(); } }
-    
-    function editS(i) { var n = prompt("نام جدید مرحله:", stps[i]); if(n) { stps[i] = n; refresh(); } }
-    function editP(i) { var n = prompt("نام جدید پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
-    
-    function finishP(i) { prjs[i].f = !prjs[i].f; refresh(); }
-    function finishS(pi, si) { if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[], f:false}; prjs[pi].c[si].f = !prjs[pi].c[si].f; refresh(); }
-
-    function addLog(pi, si) {
-        var msg = prompt("یادداشت جدید:");
-        if(msg) {
-            var now = new Date();
-            var dStr = now.toLocaleDateString('fa-IR') + " " + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
-            if(!prjs[pi].c[si]) prjs[pi].c[si] = {logs:[], f:false};
-            prjs[pi].c[si].logs.unshift({d: dStr, t: msg});
-            refresh();
-        }
-    }
-
-    function editSingleLog(pi, si, li) {
-        event.stopPropagation();
-        var old = prjs[pi].c[si].logs[li].t;
-        var msg = prompt("ویرایش یادداشت:", old);
-        if(msg === "") { prjs[pi].c[si].logs.splice(li, 1); refresh(); }
-        else if(msg) { prjs[pi].c[si].logs[li].t = msg; refresh(); }
-    }
-
-    function delP(i) { if(confirm("حذف پروژه؟")) { prjs.splice(i, 1); refresh(); } }
-    function delS(i) { if(confirm("حذف مرحله؟")) { stps.splice(i, 1); refresh(); } }
-
-    function exportData() {
-        var blob = new Blob([JSON.stringify({p:prjs, s:stps})], {type:'application/json'});
-        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "workshop_backup.json"; a.click();
-    }
-
-    function importData(e) {
-        var reader = new FileReader();
-        reader.onload = function(ev) { try { var d = JSON.parse(ev.target.result); prjs = d.p; stps = d.s; refresh(); alert("بازیابی شد"); } catch(e){alert("فایل نامعتبر")} };
-        reader.readAsText(e.target.files[0]);
-    }
-
-    refresh();
-</script>
-</body>
-</html>
+    var prjs =
