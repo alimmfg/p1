@@ -3,42 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: Tahoma; background: #f4f7f6; padding: 20px; direction: rtl; }
-        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        input, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        body { font-family: Tahoma; background: #f4f7f6; padding: 20px; direction: rtl; font-size: 16px; }
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 1200px; margin: auto; }
+        input, textarea { padding: 15px; border: 1px solid #ddd; border-radius: 10px; font-family: Tahoma; margin: 8px 0; width: 100%; box-sizing: border-box; font-size: 16px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
-        th { background: #2c3e50; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        th, td { border: 2px solid #444; padding: 15px; text-align: center; vertical-align: top; font-size: 16px; }
+        th { background: #2c3e50; color: white; font-size: 18px; }
         
         .clickable { cursor: pointer; transition: 0.2s; }
         .clickable:hover { color: #e67e22; background: #fdf2e9; }
 
-        .note-box { background: #feffd4; border: 1px solid #d4d442; padding: 8px; margin-bottom: 5px; border-radius: 5px; text-align: right; font-size: 13px; white-space: pre-wrap; }
-        .time-tag { color: #c0392b; font-size: 10px; font-weight: bold; border-bottom: 1px solid #ddd; display: block; margin-bottom: 3px; }
+        .note-box { background: #feffd4; border: 1px solid #d4d442; padding: 12px; margin-bottom: 8px; border-radius: 8px; text-align: right; font-size: 15px; white-space: pre-wrap; line-height: 1.6; }
+        .time-tag { color: #c0392b; font-size: 12px; font-weight: bold; border-bottom: 1px solid #ddd; display: block; margin-bottom: 5px; padding-bottom: 3px; }
 
-        /* پنجره یادداشت */
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.5); z-index: 1000; width: 400px; }
+        /* پنجره یادداشت - درشت‌تر */
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 20px; box-shadow: 0 0 60px rgba(0,0,0,0.6); z-index: 1000; width: 90%; max-width: 500px; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
         
-        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-p { background: #27ae60; color: white; width: 120px; }
-        .btn-s { background: #2980b9; color: white; width: 120px; }
-        .btn-save { background: #27ae60; color: white; width: 100%; padding: 12px; margin-top: 10px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .btn-p { background: #27ae60; color: white; width: 150px; }
+        .btn-s { background: #2980b9; color: white; width: 150px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; padding: 18px; margin-top: 15px; font-size: 18px; }
+        
+        .backup-section { margin-top: 40px; display: flex; gap: 15px; flex-wrap: wrap; }
+        .btn-backup { background: #8e44ad; color: white; flex: 1; min-width: 200px; }
+        .btn-restore { background: #e67e22; color: white; flex: 1; min-width: 200px; }
+        
+        small { font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center">سیستم مدیریت کارگاه</h2>
+    <h1 style="text-align:center; color: #2c3e50;">سیستم مدیریت کارگاه</h1>
     
-    <div style="display:flex; gap:10px; align-items:center">
-        <input type="text" id="p_name" placeholder="نام پروژه">
-        <button class="btn btn-p" onclick="addProject()">+ پروژه</button>
+    <div style="display:flex; gap:15px; align-items:center; flex-wrap: wrap;">
+        <input type="text" id="p_name" placeholder="نام پروژه جدید..." style="flex: 2;">
+        <button class="btn btn-p" onclick="addProject()">+ ثبت پروژه</button>
     </div>
-    <div style="display:flex; gap:10px; align-items:center">
-        <input type="text" id="s_name" placeholder="نام مرحله">
-        <button class="btn btn-s" onclick="addStep()">+ مرحله</button>
+    <div style="display:flex; gap:15px; align-items:center; flex-wrap: wrap;">
+        <input type="text" id="s_name" placeholder="نام مرحله جدید..." style="flex: 2;">
+        <button class="btn btn-s" onclick="addStep()">+ ثبت مرحله</button>
     </div>
 
     <div style="overflow-x: auto;">
@@ -48,45 +54,43 @@
         </table>
     </div>
 
-    <div style="margin-top:30px; display:flex; gap:10px">
-        <button onclick="downloadBackup()" style="background:#8e44ad; color:white;" class="btn">💾 دانلود نسخه پشتیبان (بک‌آپ)</button>
-        <button onclick="document.getElementById('fileIn').click()" style="background:#e67e22; color:white;" class="btn">📥 بازیابی فایل (Restore)</button>
+    <div class="backup-section">
+        <button onclick="downloadBackup()" class="btn btn-backup">💾 دانلود نسخه پشتیبان (بک‌آپ)</button>
+        <button onclick="document.getElementById('fileIn').click()" class="btn btn-restore">📥 بازیابی فایل (Restore)</button>
         <input type="file" id="fileIn" style="display:none" onchange="uploadBackup(event)">
     </div>
 </div>
 
 <div id="overlay" onclick="closeNote()"></div>
 <div id="modal">
-    <h4 id="m_title">ویرایش یادداشت</h4>
-    <textarea id="m_text" rows="10" placeholder="متن را اینجا بنویسید... (اینتر بزنید)"></textarea>
+    <h3 id="m_title" style="margin-top: 0;">ویرایش یادداشت</h3>
+    <textarea id="m_text" rows="12" placeholder="متن یادداشت را بنویسید..."></textarea>
     <button class="btn btn-save" onclick="saveNote()">ذخیره تغییرات</button>
 </div>
 
 <script>
-    let data = JSON.parse(localStorage.getItem('MY_WORKSHOP_DB')) || { projects: [], steps: [] };
+    let data = JSON.parse(localStorage.getItem('MY_WORKSHOP_DB_V2')) || { projects: [], steps: [] };
     let currentEdit = null;
 
     function render() {
-        localStorage.setItem('MY_WORKSHOP_DB', JSON.stringify(data));
+        localStorage.setItem('MY_WORKSHOP_DB_V2', JSON.stringify(data));
         
-        // رندر سرتیتر
         let head = '<tr><th>نام پروژه</th>';
         data.steps.forEach((s, i) => {
-            head += `<th class="clickable" onclick="editStepName(${i})">${s} <br><small style="color:#ff7675" onclick="delStep(event, ${i})">[حذف]</small></th>`;
+            head += `<th class="clickable" onclick="editStepName(${i})">${s} <br><small style="color:#ffcccc; cursor:pointer" onclick="delStep(event, ${i})">[حذف مرحله]</small></th>`;
         });
         document.getElementById('h_row').innerHTML = head + '</tr>';
 
-        // رندر بدنه
         let body = '';
         data.projects.forEach((p, pi) => {
             body += `<tr>
-                <td class="clickable" onclick="editProjName(${pi})"><b>${p.name}</b><br><small style="color:red" onclick="delProj(event, ${pi})">[حذف کل]</small></td>`;
+                <td class="clickable" onclick="editProjName(${pi})"><strong>${p.name}</strong><br><small style="color:#e74c3c; cursor:pointer" onclick="delProj(event, ${pi})">[حذف پروژه]</small></td>`;
             data.steps.forEach((s, si) => {
                 let cell = p.cells[si] || { logs: [] };
                 let logsHtml = cell.logs.map((l, li) => 
                     `<div class="note-box" onclick="openNote(${pi}, ${si}, ${li})"><span class="time-tag">${l.time}</span>${l.text}</div>`
                 ).join('');
-                body += `<td onclick="openNote(${pi}, ${si})">${logsHtml || '<small style="color:#ccc">کلیک برای یادداشت</small>'}</td>`;
+                body += `<td onclick="openNote(${pi}, ${si})" style="min-width: 200px;">${logsHtml || '<small style="color:#bbb">برای یادداشت کلیک کنید</small>'}</td>`;
             });
             body += '</tr>';
         });
@@ -104,17 +108,16 @@
     function saveNote() {
         let { pi, si, li } = currentEdit;
         let newText = document.getElementById('m_text').value.trim();
-        let now = new Date().toLocaleDateString('fa-IR') + " ساعت " + new Date().getHours() + ":" + new Date().getMinutes();
+        let now = new Date().toLocaleDateString('fa-IR') + " ساعت " + new Date().getHours() + ":" + (new Date().getMinutes() < 10 ? '0' : '') + new Date().getMinutes();
 
         if (!data.projects[pi].cells[si]) data.projects[pi].cells[si] = { logs: [] };
 
         if (li !== null) {
-            // ویرایش یادداشت قبلی
-            if (data.projects[pi].cells[si].logs[li].text !== newText) {
-                data.projects[pi].cells[si].logs[li].text = newText + "\n(اصلاح در: " + now + ")";
+            let oldText = data.projects[pi].cells[si].logs[li].text;
+            if (oldText !== newText) {
+                data.projects[pi].cells[si].logs[li].text = newText + "\n-------------------\n(اصلاح در: " + now + ")";
             }
         } else if (newText !== "") {
-            // یادداشت جدید
             data.projects[pi].cells[si].logs.unshift({ time: now, text: newText });
         }
         closeNote();
@@ -138,15 +141,14 @@
 
     function editProjName(i) { let n = prompt("نام جدید پروژه:", data.projects[i].name); if(n) { data.projects[i].name = n; render(); } }
     function editStepName(i) { let n = prompt("نام جدید مرحله:", data.steps[i]); if(n) { data.steps[i] = n; render(); } }
-    function delProj(e, i) { e.stopPropagation(); if(confirm("حذف پروژه؟")) { data.projects.splice(i, 1); render(); } }
-    function delStep(e, i) { e.stopPropagation(); if(confirm("حذف مرحله؟")) { data.steps.splice(i, 1); render(); } }
+    function delProj(e, i) { e.stopPropagation(); if(confirm("آیا پروژه حذف شود؟")) { data.projects.splice(i, 1); render(); } }
+    function delStep(e, i) { e.stopPropagation(); if(confirm("آیا مرحله حذف شود؟")) { data.steps.splice(i, 1); render(); } }
 
-    // --- توابع بک‌آپ و بازیابی ---
     function downloadBackup() {
         let blob = new Blob([JSON.stringify(data)], {type: "application/json"});
         let a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "workshop_data.json";
+        a.download = "workshop_backup_" + new Date().getTime() + ".json";
         a.click();
     }
 
@@ -158,9 +160,9 @@
                 if (imported.projects && imported.steps) {
                     data = imported;
                     render();
-                    alert("با موفقیت بازیابی شد.");
+                    alert("اطلاعات با موفقیت بازیابی شد.");
                 }
-            } catch (err) { alert("فایل معتبر نیست."); }
+            } catch (err) { alert("خطا در خواندن فایل بک‌آپ!"); }
         };
         reader.readAsText(e.target.files[0]);
     }
