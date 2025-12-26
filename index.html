@@ -4,121 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma, sans-serif; direction: rtl; padding: 15px; background: #eee; }
-        .container { background: white; padding: 15px; border-radius: 10px; border: 2px solid #333; }
-        input { padding: 12px; width: 60%; margin-bottom: 10px; border: 1px solid #999; border-radius: 5px; }
-        button { padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; }
-        .btn-add { background: #28a745; color: white; }
-        .btn-step { background: #007bff; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #000; padding: 10px; text-align: center; background: white; }
-        th { background: #444; color: white; }
-        .log-box { text-align: right; font-size: 11px; min-height: 40px; cursor: pointer; }
-        .date { color: #d35400; font-size: 10px; font-weight: bold; display: block; }
-        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
-        .done-row { background: #d4edda !important; }
+        body { font-family: sans-serif; background: #eee; padding: 10px; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input { width: 70%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+        th { background: #333; color: white; }
+        .log { text-align: right; font-size: 11px; color: #444; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>مدیریت کارگاه (نسخه اصلاح شده)</h2>
-    
-    <input type="text" id="p_input" placeholder="نام پروژه جدید...">
-    <button class="btn-add" onclick="addP()">+ پروژه</button>
+<div class="card">
+    <h3>مدیریت کارگاه (نسخه فوق‌سریع)</h3>
+    <input type="text" id="p" placeholder="نام پروژه"> <button onclick="addP()" style="background:green; color:white">ثبت پروژه</button>
     <br>
-    <input type="text" id="s_input" placeholder="نام مرحله جدید...">
-    <button class="btn-step" onclick="addS()">+ مرحله</button>
+    <input type="text" id="s" placeholder="نام مرحله"> <button onclick="addS()" style="background:blue; color:white">ثبت مرحله</button>
 
-    <div style="overflow-x: auto;">
-        <table id="tbl">
-            <thead id="h"></thead>
-            <tbody id="b"></tbody>
-        </table>
-    </div>
+    <table id="tbl">
+        <thead id="h"></thead>
+        <tbody id="b"></tbody>
+    </table>
 </div>
 
 <script>
-    // استفاده از اسامی کاملاً جدید برای پاکسازی حافظه قبل
-    var prjs = JSON.parse(localStorage.getItem('P_LIST_FINAL')) || [];
-    var stps = JSON.parse(localStorage.getItem('S_LIST_FINAL')) || [];
-
-    function render() {
-        localStorage.setItem('P_LIST_FINAL', JSON.stringify(prjs));
-        localStorage.setItem('S_LIST_FINAL', JSON.stringify(stps));
-
-        // رندر هدر
-        var h = document.getElementById('h');
-        var headHtml = '<tr><th>پروژه</th>';
-        for(var i=0; i<stps.length; i++) {
-            headHtml += '<th>' + stps[i] + '</th>';
-        }
-        h.innerHTML = headHtml + '</tr>';
-
-        // رندر بدنه
-        var b = document.getElementById('b');
-        var bodyHtml = '';
-        for(var j=0; j<prjs.length; j++) {
-            bodyHtml += '<tr class="' + (prjs[j].f ? 'done-row' : '') + '">';
-            bodyHtml += '<td>' + prjs[j].n + '<br><button onclick="finishP('+j+')" style="font-size:9px">تمام</button></td>';
-            
-            for(var k=0; k<stps.length; k++) {
-                var cellData = prjs[j].c[k] || {t:'', f:false};
-                var cellClass = cellData.f ? 'done-cell' : '';
-                bodyHtml += '<td class="' + cellClass + '" onclick="editC('+j+','+k+')">';
-                bodyHtml += '<div class="log-box">' + (cellData.t || '---') + '</div>';
-                bodyHtml += '<button onclick="event.stopPropagation(); finishS('+j+','+k+')" style="font-size:9px">✅</button>';
-                bodyHtml += '</td>';
-            }
-            bodyHtml += '</tr>';
-        }
-        b.innerHTML = bodyHtml;
-    }
+    // استفاده از یک سیستم بسیار ساده برای ذخیره‌سازی
+    var prjs = [];
+    var stps = [];
 
     function addP() {
-        var val = document.getElementById('p_input').value;
-        if(val) {
-            // ساختار ساده برای جلوگیری از باگ
-            prjs.push({ n: val, c: {}, f: false });
-            document.getElementById('p_input').value = '';
-            render();
+        var n = document.getElementById('p').value;
+        if(n) {
+            prjs.push({name: n, logs: []});
+            document.getElementById('p').value = "";
+            draw();
         }
     }
 
     function addS() {
-        var val = document.getElementById('s_input').value;
+        var n = document.getElementById('s').value;
+        if(n) {
+            stps.push(n);
+            document.getElementById('s').value = "";
+            draw();
+        }
+    }
+
+    function draw() {
+        var h = document.getElementById('h');
+        var b = document.getElementById('b');
+        
+        // رسم سرتیتر
+        var rowH = '<tr><th>نام پروژه</th>';
+        for(var i=0; i<stps.length; i++) { rowH += '<th>'+stps[i]+'</th>'; }
+        h.innerHTML = rowH + '</tr>';
+
+        // رسم محتوا
+        var htmlB = '';
+        for(var j=0; j<prjs.length; j++) {
+            htmlB += '<tr><td><b>'+prjs[j].name+'</b></td>';
+            for(var k=0; k<stps.length; k++) {
+                var content = prjs[j].logs[k] || "---";
+                htmlB += '<td onclick="addLog('+j+','+k+')"><div class="log">'+content+'</div></td>';
+            }
+            htmlB += '</tr>';
+        }
+        b.innerHTML = htmlB;
+    }
+
+    function addLog(pIdx, sIdx) {
+        var val = prompt("گزارش را بنویسید:");
         if(val) {
-            stps.push(val);
-            document.getElementById('s_input').value = '';
-            render();
-        }
-    }
-
-    function editC(pIdx, sIdx) {
-        var msg = prompt("گزارش جدید:");
-        if(msg) {
             var d = new Date().toLocaleDateString('fa-IR');
-            var t = new Date().getHours() + ":" + new Date().getMinutes();
-            var entry = '<span class="date">' + d + ' ' + t + '</span>' + msg + '<br>';
-            
-            if(!prjs[pIdx].c[sIdx]) prjs[pIdx].c[sIdx] = {t:'', f:false};
-            prjs[pIdx].c[sIdx].t = entry + prjs[pIdx].c[sIdx].t;
-            render();
+            prjs[pIdx].logs[sIdx] = d + ": " + val;
+            draw();
         }
     }
-
-    function finishS(pIdx, sIdx) {
-        if(!prjs[pIdx].c[sIdx]) prjs[pIdx].c[sIdx] = {t:'', f:false};
-        prjs[pIdx].c[sIdx].f = !prjs[pIdx].c[sIdx].f;
-        render();
-    }
-
-    function finishP(i) {
-        prjs[i].f = !prjs[i].f;
-        render();
-    }
-
-    render();
 </script>
 </body>
 </html>
