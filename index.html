@@ -4,57 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma; padding: 10px; background: #f4f4f4; direction: rtl; }
-        .container { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px #bbb; }
-        .input-box { margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        input { padding: 10px; width: 65%; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; }
-        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
-        .btn-p { background: #27ae60; color: white; }
-        .btn-s { background: #2980b9; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #333; padding: 10px; text-align: center; font-size: 13px; }
+        body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f9f9f9; }
+        .box { background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ddd; }
+        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 5px; }
+        button { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: center; }
         th { background: #34495e; color: white; }
-        .p-done { background: #d4edda !important; }
-        .s-done { background: #e3f2fd; border: 2px solid #2196f3 !important; font-weight: bold; }
-        .action-link { font-size: 10px; display: block; margin-top: 5px; cursor: pointer; }
+        .p-name { cursor: pointer; color: #2c3e50; font-weight: bold; }
+        .s-name { cursor: pointer; color: #fff; }
+        .done { background: #d4edda !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="input-box">
-        <input type="text" id="pInput" placeholder="نام پروژه جدید">
-        <button class="btn-p" onclick="addP()">+ پروژه</button>
+<div class="box">
+    <div style="margin-bottom: 20px;">
+        <input type="text" id="p_in" placeholder="نام پروژه جدید">
+        <button onclick="addProject()" style="background:#27ae60">+ پروژه</button>
         <br>
-        <input type="text" id="sInput" placeholder="نام مرحله جدید">
-        <button class="btn-s" onclick="addS()">+ مرحله</button>
+        <input type="text" id="s_in" placeholder="نام مرحله جدید">
+        <button onclick="addStep()" style="background:#2980b9">+ مرحله</button>
     </div>
 
     <div style="overflow-x: auto;">
-        <table>
-            <thead id="thead"></thead>
-            <tbody id="tbody"></tbody>
+        <table border="1">
+            <thead id="h_t"></thead>
+            <tbody id="b_t"></tbody>
         </table>
     </div>
 
-    <button onclick="downloadBackup()" style="width:100%; margin-top:20px; background:#8e44ad; color:white; padding:12px;">💾 ذخیره فایل پشتیبان</button>
+    <button onclick="exportData()" style="width:100%; margin-top:20px; background:#8e44ad; padding:15px;">💾 دانلود فایل پشتیبان</button>
 </div>
 
 <script>
-    // استفاده از کلید کاملاً جدید برای اطمینان از کارکرد دکمه‌ها
-    var STORAGE_S = "WRK_STEPS_V25";
-    var STORAGE_P = "WRK_PROJS_V25";
+    // استفاده از متغیرهای ساده برای جلوگیری از قفل شدن مرورگر
+    var prjs = [];
+    var stps = [];
 
-    var steps = JSON.parse(localStorage.getItem(STORAGE_S)) || [];
-    var projs = JSON.parse(localStorage.getItem(STORAGE_P)) || [];
+    // تلاش برای خواندن اطلاعات قبلی
+    try {
+        prjs = JSON.parse(localStorage.getItem('P_DATA')) || [];
+        stps = JSON.parse(localStorage.getItem('S_DATA')) || [];
+    } catch(e) { console.log("Memory Reset"); }
 
-    function render() {
-        localStorage.setItem(STORAGE_S, JSON.stringify(steps));
-        localStorage.setItem(STORAGE_P, JSON.stringify(projs));
+    function refresh() {
+        // ذخیره در حافظه
+        localStorage.setItem('P_DATA', JSON.stringify(prjs));
+        localStorage.setItem('S_DATA', JSON.stringify(stps));
 
-        // ۱. ساخت سرتیترها (مراحل)
-        var thead = document.getElementById('thead');
-        var headHtml = '<tr><th>نام پروژه</th>';
-        for (var i = 0; i < steps.length; i++) {
-            headHtml += '<th>' + 
-                        '<span onclick="
+        // رندر تیترها (مراحل)
+        var h = document.getElementById('h_t');
+        var headHtml = '<tr><th>پروژه (ادیت)</th>';
+        for(var i=0; i<stps.length; i++) {
+            headHtml += '<th><span class="s-name" onclick="editS('+i+')">'+stps[i]+'</span><br><small onclick="delS('+i+')" style="color:red;font-size:10px">[حذف]</small></th>';
+        }
+        h.innerHTML = headHtml + '</tr>';
+
+        // رندر ردیف‌ها (پروژه‌ها)
+        var b = document.getElementById('b_t');
+        b.innerHTML = '';
+        for(var j=0; j<prjs.length; j++) {
+            var p = prjs[j];
+            var rowHtml = '<tr class="'+(p.f?'done':'')+'">';
+            rowHtml += '<td><span class="p-name" onclick="editP('+j+')">'+p.n+'</span><br><button onclick="toggleP('+j+')" style="background:#666;font-size:9px;padding:3px">'+(p.f?'بازگشت':'اتمام')+'</button></td>';
+            
+            for(var k=0; k<stps.length; k++) {
+                var d = p.d[k] || '';
+                rowHtml += '<td onclick="editCell('+j+','+k+')">'+d+'</td>';
+            }
+            rowHtml += '</tr>';
+            b.innerHTML += rowHtml;
+        }
+    }
+
+    function addProject() {
+        var val = document.getElementById('p_in').value;
+        if(val) {
+            prjs.push({n: val, d: {}, f: false});
+            document.getElementById('p_in').value = '';
+            refresh();
+        } else { alert("نام پروژه را بنویسید"); }
+    }
+
+    function addStep() {
+        var val = document.getElementById('s_in').value;
+        if(val) {
+            stps.push(val);
+            document.getElementById('s_in').value = '';
+            refresh();
+        } else { alert("نام مرحله را بنویسید"); }
+    }
+
+    // قابلیت ادیت نام پروژه
+    function editP(i) {
+        var n = prompt("ویرایش نام پروژه:", prjs[i].n);
+        if(n) { prjs[i].n = n; refresh(); }
+    }
+
+    // قابلیت ادیت نام مرحله
+    function editS(i) {
+        var n = prompt("ویرایش نام مرحله:", stps[i]);
+        if(n) { stps[i] = n; refresh(); }
+    }
+
+    function editCell(pi, si) {
+        var old = prjs[pi].d[si] || '';
+        var txt = prompt("گزارش:", old.replace(/<br>/g, '\n'));
+        if(txt !== null) {
+            var now = new Date();
+            var time = now.getHours() + ":" + now.getMinutes();
+            prjs[pi].d[si] = time + " - " + txt.replace(/\n/g, '<br>') + "<br>" + old;
+            refresh();
+        }
+    }
+
+    function toggleP(i) { prjs[i].f = !prjs[i].f; refresh(); }
+    function delS(i) { if(confirm('حذف مرحله؟')) { stps.splice(i,1); refresh(); } }
+
+    function exportData() {
+        var blob = new Blob([JSON.stringify({prjs, stps})], {type: 'application/json'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "data.json"; a.click();
+    }
+
+    refresh();
+</script>
+</body>
+</html>
