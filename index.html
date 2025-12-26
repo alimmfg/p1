@@ -3,24 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>مدیریت تولید - نسخه نهایی</title>
+    <title>مدیریت کارگاه - نسخه پیشرفته</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; margin: 0; direction: rtl; }
-        .box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        body { font-family: Tahoma, sans-serif; background: #f4f7f6; padding: 10px; margin: 0; direction: rtl; }
+        .box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .input-group { display: flex; gap: 8px; margin-bottom: 10px; }
         input, textarea { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-family: Tahoma; font-size: 14px; }
         input { flex: 1; }
         button { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-family: Tahoma; }
         .btn-p { background: #2ecc71; color: white; }
         .btn-s { background: #3498db; color: white; }
-        .table-wrap { overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .table-wrap { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #ddd; }
         table { border-collapse: collapse; width: 100%; background: white; }
-        th, td { border: 1px solid #eee; padding: 12px; text-align: center; min-width: 120px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: center; min-width: 120px; }
         th { background: #34495e; color: white; font-size: 13px; }
-        .cell { cursor: pointer; white-space: pre-wrap; font-size: 12px; min-height: 50px; background: #fff; }
-        .has-note { background: #e3f2fd !important; border-right: 4px solid #2196f3 !important; }
-        .done-row td { background: #d4edda !important; color: #155724; }
-        .action-btn { font-size: 10px; color: #e74c3c; display: block; margin-top: 8px; text-decoration: underline; cursor: pointer; }
+        
+        /* وضعیت‌های مختلف خانه‌ها */
+        .cell { cursor: pointer; white-space: pre-wrap; font-size: 12px; min-height: 50px; background: #fff; position: relative; }
+        .step-done { background: #d4edda !important; border: 2px solid #28a745 !important; } /* مرحله تمام شده */
+        .has-note { background: #fff9c4; border-bottom: 3px solid #fbc02d; } /* فقط یادداشت دارد */
+        .project-done td { background: #c8e6c9 !important; color: #1b5e20; } /* کل پروژه تمام شده */
+        
+        .action-link { font-size: 10px; color: #e74c3c; display: block; margin-top: 5px; text-decoration: underline; cursor: pointer; }
         
         /* Modal */
         #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
@@ -31,14 +35,14 @@
 <body>
 
 <div class="box">
-    <h3 style="text-align:center; margin-top:0;">📋 سیستم ثبت وضعیت کارگاه</h3>
+    <h3 style="text-align:center; margin-top:0;">📋 پنل مدیریت مراحل تولید</h3>
     
     <div class="input-group">
-        <input type="text" id="p_name" placeholder="نام پروژه جدید...">
+        <input type="text" id="p_name" placeholder="نام پروژه جدید (مثلاً CNC)...">
         <button class="btn-p" onclick="fnAddP()">+ پروژه</button>
     </div>
     <div class="input-group">
-        <input type="text" id="s_name" placeholder="مرحله جدید...">
+        <input type="text" id="s_name" placeholder="مرحله جدید (مثلاً جوشکاری)...">
         <button class="btn-s" onclick="fnAddS()">+ مرحله</button>
     </div>
 
@@ -52,62 +56,75 @@
 
 <div id="modalOverlay" onclick="fnClose()"></div>
 <div id="noteModal">
-    <h4 style="margin-top:0">ویرایش یادداشت و تاریخ</h4>
-    <textarea id="m_txt" style="width:100%; height:120px; box-sizing: border-box;" placeholder="یادداشت... (اینتر برای خط بعد)"></textarea>
+    <h4 id="modalTitle" style="margin-top:0">ویرایش مرحله</h4>
+    <textarea id="m_txt" style="width:100%; height:100px; box-sizing: border-box;" placeholder="یادداشت فنی..."></textarea>
     <br><br>
     <input type="text" id="m_date" style="width:100%; box-sizing: border-box;" placeholder="تاریخ">
-    <div style="display:flex; gap:10px; margin-top:15px;">
-        <button class="btn-p" style="flex:1" onclick="fnSave()">ذخیره</button>
-        <button style="background:#95a5a6; color:white; flex:1" onclick="fnClose()">لغو</button>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">
+        <button id="btnFinishStep" style="background:#27ae60; color:white;">✅ اتمام این مرحله</button>
+        <div style="display:flex; gap:8px;">
+            <button class="btn-p" style="flex:1" onclick="fnSave()">ذخیره تغییرات</button>
+            <button style="background:#95a5a6; color:white; flex:1" onclick="fnClose()">لغو</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // کلیدهای جدید برای جلوگیری از تداخل با نسخه‌های خراب قبلی
-    var STORAGE_P = "APP_PROJS_FINAL";
-    var STORAGE_S = "APP_STEPS_FINAL";
+    var ST_P = "WORKSHOP_PROJS_V7";
+    var ST_S = "WORKSHOP_STEPS_V7";
 
-    var mySteps = JSON.parse(localStorage.getItem(STORAGE_S)) || [];
-    var myProjs = JSON.parse(localStorage.getItem(STORAGE_P)) || [];
-    var activeP = null, activeS = null;
+    var mySteps = JSON.parse(localStorage.getItem(ST_S)) || [];
+    var myProjs = JSON.parse(localStorage.getItem(ST_P)) || [];
+    var curP = null, curS = null;
 
     function fnUpdate() {
-        localStorage.setItem(STORAGE_S, JSON.stringify(mySteps));
-        localStorage.setItem(STORAGE_P, JSON.stringify(myProjs));
+        localStorage.setItem(ST_S, JSON.stringify(mySteps));
+        localStorage.setItem(ST_P, JSON.stringify(myProjs));
         fnDraw();
     }
 
     function fnAddP() {
-        var val = document.getElementById('p_name').value;
-        if(val) { 
-            myProjs.push({ name: val, data: {}, isDone: false }); 
-            document.getElementById('p_name').value = ''; 
-            fnUpdate(); 
-        }
+        var v = document.getElementById('p_name').value;
+        if(v) { myProjs.push({ n: v, d: {}, f: false }); document.getElementById('p_name').value=''; fnUpdate(); }
     }
 
     function fnAddS() {
-        var val = document.getElementById('s_name').value;
-        if(val) { 
-            mySteps.push(val); 
-            document.getElementById('s_name').value = ''; 
-            fnUpdate(); 
-        }
+        var v = document.getElementById('s_name').value;
+        if(v) { mySteps.push(v); document.getElementById('s_name').value=''; fnUpdate(); }
     }
 
     function fnOpen(pi, si) {
-        activeP = pi; activeS = si;
-        var item = myProjs[pi].data[si] || { t: "", d: new Date().toLocaleDateString('fa-IR') };
-        document.getElementById('m_txt').value = item.t;
-        document.getElementById('m_date').value = item.d;
+        curP = pi; curS = si;
+        var item = myProjs[pi].d[si] || { t: "", dt: new Date().toLocaleDateString('fa-IR'), done: false };
+        document.getElementById('modalTitle').innerText = "پروژه: " + myProjs[pi].n + " | مرحله: " + mySteps[si];
+        document.getElementById('m_txt').value = item.t || "";
+        document.getElementById('m_date').value = item.dt || new Date().toLocaleDateString('fa-IR');
+        
+        var btn = document.getElementById('btnFinishStep');
+        if(item.done) {
+            btn.innerText = "↩️ بازگشت به در حال انجام";
+            btn.style.background = "#e67e22";
+        } else {
+            btn.innerText = "✅ اتمام این مرحله";
+            btn.style.background = "#27ae60";
+        }
+        btn.onclick = function() { fnToggleStepDone(pi, si); };
+
         document.getElementById('modalOverlay').style.display = 'block';
         document.getElementById('noteModal').style.display = 'block';
     }
 
+    function fnToggleStepDone(pi, si) {
+        if(!myProjs[pi].d[si]) myProjs[pi].d[si] = { t: "", dt: new Date().toLocaleDateString('fa-IR'), done: false };
+        myProjs[pi].d[si].done = !myProjs[pi].d[si].done;
+        fnClose();
+        fnUpdate();
+    }
+
     function fnSave() {
-        var txt = document.getElementById('m_txt').value;
-        var dat = document.getElementById('m_date').value;
-        myProjs[activeP].data[activeS] = { t: txt, d: dat };
+        if(!myProjs[curP].d[curS]) myProjs[curP].d[curS] = { done: false };
+        myProjs[curP].d[curS].t = document.getElementById('m_txt').value;
+        myProjs[curP].d[curS].dt = document.getElementById('m_date').value;
         fnClose();
         fnUpdate();
     }
@@ -117,32 +134,36 @@
         document.getElementById('noteModal').style.display = 'none';
     }
 
-    function fnToggle(i) { myProjs[i].isDone = !myProjs[i].isDone; fnUpdate(); }
-    function fnDelP(i) { if(confirm('حذف کامل این پروژه؟')) { myProjs.splice(i,1); fnUpdate(); } }
-    function fnDelS(i) { if(confirm('حذف این مرحله از کل لیست؟')) { mySteps.splice(i,1); fnUpdate(); } }
+    function fnDelP(i) { if(confirm('حذف پروژه؟')) { myProjs.splice(i,1); fnUpdate(); } }
+    function fnDelS(i) { if(confirm('حذف مرحله؟')) { mySteps.splice(i,1); myProjs.forEach(p => delete p.d[i]); fnUpdate(); } }
+    function fnToggleProj(i) { myProjs[i].f = !myProjs[i].f; fnUpdate(); }
 
     function fnDraw() {
         var hr = document.getElementById('h_row');
-        hr.innerHTML = '<th>نام پروژه</th>';
+        hr.innerHTML = '<th>پروژه / مراحل</th>';
         mySteps.forEach((s, i) => {
-            hr.innerHTML += `<th>${s}<span class="action-btn" onclick="fnDelS(${i})">حذف مرحله</span></th>`;
+            hr.innerHTML += `<th>${s}<span class="action-link" onclick="fnDelS(${i})">حذف</span></th>`;
         });
 
         var tb = document.getElementById('t_body');
         tb.innerHTML = '';
         myProjs.forEach((p, pi) => {
-            var rClass = p.isDone ? 'done-row' : '';
-            var row = `<tr class="${rClass}">
+            var rCls = p.f ? 'project-done' : '';
+            var row = `<tr class="${rCls}">
                 <td>
-                    <b>${p.name}</b>
-                    <span class="action-btn" style="color:#27ae60" onclick="fnToggle(${pi})">${p.isDone ? '↩️ بازگشت' : '✅ اتمام'}</span>
-                    <span class="action-btn" onclick="fnDelP(${pi})">🗑 حذف</span>
+                    <b>${p.n}</b>
+                    <span class="action-link" style="color:#2ecc71" onclick="fnToggleProj(${pi})">${p.f ? '↩️ بازگشت' : '✅ اتمام کل پروژه'}</span>
+                    <span class="action-link" onclick="fnDelP(${pi})">🗑 حذف</span>
                 </td>`;
             mySteps.forEach((s, si) => {
-                var cellData = p.data[si] || {t:"", d:""};
-                var has = cellData.t ? 'has-note' : '';
-                var content = cellData.t ? `<b>${cellData.t}</b><br><small>${cellData.d}</small>` : '---';
-                row += `<td class="cell ${has}" onclick="fnOpen(${pi}, ${si})">${content}</td>`;
+                var data = p.d[si] || {t:"", dt:"", done:false};
+                var cls = "cell";
+                if(data.done) cls += " step-done";
+                else if(data.t) cls += " has-note";
+                
+                var txt = data.t ? `<b>${data.t}</b><br>` : '';
+                var dsp = data.done ? `✅ تمام شده<br>${txt}${data.dt}` : (data.t ? `${txt}${data.dt}` : '---');
+                row += `<td class="${cls}" onclick="fnOpen(${pi}, ${si})">${dsp}</td>`;
             });
             row += '</tr>';
             tb.innerHTML += row;
