@@ -4,66 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f4f4f4; padding: 10px; direction: rtl; }
-        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        body { font-family: Tahoma, sans-serif; background: #f0f0f0; padding: 10px; direction: rtl; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         input { width: 60%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
         .btn-p { background: #28a745; color: white; }
         .btn-s { background: #007bff; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
-        th { background: #34495e; color: white; }
-        .log-container { text-align: right; font-size: 11px; min-height: 40px; line-height: 1.6; }
-        .date-tag { color: #e67e22; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; }
-        .old-logs { color: #555; }
+        th, td { border: 1px solid #000; padding: 10px; text-align: center; vertical-align: top; }
+        th { background: #333; color: white; }
+        .log-box { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.5; }
+        .date { color: #d35400; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2 style="text-align:center">مدیریت پروژه و مراحل</h2>
+    <h3 style="text-align:center">سامانه مدیریت کارگاه</h3>
     
-    <input type="text" id="p_name" placeholder="نام پروژه جدید">
+    <input type="text" id="p_in" placeholder="نام پروژه جدید">
     <button class="btn-p" onclick="addP()">+ پروژه</button>
     <br>
-    <input type="text" id="s_name" placeholder="نام مرحله جدید">
+    <input type="text" id="s_in" placeholder="نام مرحله جدید">
     <button class="btn-s" onclick="addS()">+ مرحله</button>
 
     <div style="overflow-x: auto;">
-        <table id="mainTable">
-            <thead id="h_t"></thead>
-            <tbody id="b_t"></tbody>
+        <table id="tbl">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
         </table>
     </div>
-
-    <br>
-    <button onclick="saveData()" style="background:#6f42c1; color:white; width:100%">💾 ذخیره کل اطلاعات (پشتیبان)</button>
 </div>
 
 <script>
-    // بازیابی اطلاعات از حافظه
-    var projects = JSON.parse(localStorage.getItem('W_DATA_V12')) || [];
-    var steps = JSON.parse(localStorage.getItem('S_DATA_V12')) || [];
+    // استفاده از اسامی جدید برای متغیرها جهت جلوگیری از تداخل
+    var myPrjs = JSON.parse(localStorage.getItem('FINAL_PRJS_99')) || [];
+    var myStps = JSON.parse(localStorage.getItem('FINAL_STPS_99')) || [];
 
-    function draw() {
-        // ذخیره در حافظه گوشی
-        localStorage.setItem('W_DATA_V12', JSON.stringify(projects));
-        localStorage.setItem('S_DATA_V12', JSON.stringify(steps));
+    function updateView() {
+        localStorage.setItem('FINAL_PRJS_99', JSON.stringify(myPrjs));
+        localStorage.setItem('FINAL_STPS_99', JSON.stringify(myStps));
 
-        // رسم هدر (مراحل)
-        var h = document.getElementById('h_t');
-        var headHtml = '<tr><th>پروژه‌ها</th>';
-        for(var i=0; i<steps.length; i++) {
-            headHtml += '<th>' + steps[i] + '</th>';
+        // رسم هدر
+        var h = document.getElementById('thead');
+        var hHtml = '<tr><th>نام پروژه</th>';
+        for(var i=0; i<myStps.length; i++) {
+            hHtml += '<th>' + myStps[i] + '</th>';
         }
-        h.innerHTML = headHtml + '</tr>';
+        h.innerHTML = hHtml + '</tr>';
 
-        // رسم ردیف‌ها (پروژه‌ها)
-        var b = document.getElementById('b_t');
-        var bodyHtml = '';
-        for(var j=0; j<projects.length; j++) {
-            bodyHtml += '<tr><td><b>' + projects[j].name + '</b></td>';
-            for(var k=0; k<steps.length; k++) {
-                // دریافت یادداشت‌های این سلول
-                var logs = projects[j].cells[k] || "";
-                bodyHtml += '<td onclick="addLog('+j+','+k+')">
+        // رسم بدنه
+        var b = document.getElementById('tbody');
+        var bHtml = '';
+        for(var j=0; j<myPrjs.length; j++) {
+            bHtml += '<tr><td><b>' + myPrjs[j].n + '</b></td>';
+            for(var k=0; k<myStps.length; k++) {
+                var content = myPrjs[j].c[k] || "---";
+                bHtml += '<td onclick="writeLog('+j+','+k+')"><div class="log-box">' + content + '</div></td>';
+            }
+            bHtml += '</tr>';
+        }
+        b.innerHTML = bHtml;
+    }
+
+    function addP() {
+        var val = document.getElementById('p_in').value;
+        if(val.trim() !== "") {
+            myPrjs.push({ n: val, c: {} });
+            document.getElementById('p_in').value = "";
+            updateView();
+        }
+    }
+
+    function addS() {
+        var val = document.getElementById('s_in').value;
+        if(val.trim() !== "") {
+            myStps.push(val);
+            document.getElementById('s_in').value = "";
+            updateView();
+        }
+    }
+
+    function writeLog(pIdx, sIdx) {
+        var msg = prompt("یادداشت جدید:");
+        if(msg) {
+            var now = new Date();
+            var d = now.toLocaleDateString('fa-IR');
+            var t = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
+            
+            var newEntry = '<span class="date">' + d + ' - ' + t + '</span>' + msg + '<br><hr>';
+            
+            // اضافه کردن به یادداشت قبلی بدون پاک کردن آن
+            if(!myPrjs[pIdx].c[sIdx]) myPrjs[pIdx].c[sIdx] = "";
+            myPrjs[pIdx].c[sIdx] = newEntry + myPrjs[pIdx].c[sIdx];
+            
+            updateView();
+        }
+    }
+
+    updateView();
+</script>
+</body>
+</html>
