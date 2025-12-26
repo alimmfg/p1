@@ -2,55 +2,41 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: tahoma; padding: 10px; }
-        button { padding: 10px; margin: 5px; cursor: pointer; border-radius: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #000; padding: 8px; text-align: center; }
-        .done { background: #9f9; }
-    </style>
+    <title>تست نهایی</title>
 </head>
 <body>
-    <h3>مدیریت تولید (نسخه سبک)</h3>
-    <input type="text" id="pI" placeholder="پروژه"> <button onclick="addP()">+ پروژه</button> <br>
-    <input type="text" id="sI" placeholder="مرحله"> <button onclick="addS()">+ مرحله</button>
+    <h3>ثبت پروژه</h3>
+    <input type="text" id="pName" placeholder="نام پروژه">
+    <button onclick="addProject()">اضافه کن</button>
     
-    <table border="1"><thead id="h"></thead><tbody id="b"></tbody></table>
+    <div id="list" style="margin-top:20px;"></div>
 
     <script>
-        var S = JSON.parse(localStorage.getItem('S1')) || [];
-        var P = JSON.parse(localStorage.getItem('P1')) || [];
+        // استفاده از حافظه
+        var myData = JSON.parse(localStorage.getItem('MY_STORE') || '[]');
 
-        function show() {
-            localStorage.setItem('S1', JSON.stringify(S));
-            localStorage.setItem('P1', JSON.stringify(P));
-            document.getElementById('h').innerHTML = '<tr><th>پروژه</th>' + S.map(s=>'<th>'+s+'</th>').join('') + '</tr>';
-            var html = '';
-            P.forEach((p,pi)=>{
-                html += '<tr><td>'+p.n+'</td>';
-                S.forEach((s,si)=>{
-                    var d = p.d[si] || {t:''};
-                    html += '<td onclick="addT('+pi+','+si+')">'+d.t+'</td>';
-                });
-                html += '</tr>';
+        function render() {
+            var html = '<ul>';
+            myData.forEach(function(item) {
+                html += '<li>' + item + '</li>';
             });
-            document.getElementById('b').innerHTML = html;
+            html += '</ul>';
+            document.getElementById('list').innerHTML = html;
+            localStorage.setItem('MY_STORE', JSON.stringify(myData));
         }
 
-        function addP() { var v=document.getElementById('pI').value; if(v){ P.push({n:v, d:{}}); document.getElementById('pI').value=''; show(); } }
-        function addS() { var v=document.getElementById('sI').value; if(v){ S.push(v); document.getElementById('sI').value=''; show(); } }
-        function addT(pi,si) { 
-            var txt = prompt("گزارش را بنویسید:"); 
-            if(txt){ 
-                if(!P[pi].d[si]) P[pi].d[si]={t:''};
-                var now = new Date();
-                var time = now.getHours()+":"+now.getMinutes();
-                P[pi].d[si].t = time + ": " + txt + "\n" + P[pi].d[si].t;
-                show();
+        function addProject() {
+            var val = document.getElementById('pName').value;
+            if (val) {
+                myData.push(val);
+                document.getElementById('pName').value = '';
+                render();
+            } else {
+                alert('نام را بنویس');
             }
         }
-        show();
+
+        render();
     </script>
 </body>
 </html>
