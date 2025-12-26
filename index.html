@@ -3,96 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل کارگاه</title>
+    <title>مدیریت کارگاه - نسخه کامل</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f4f4; }
-        .card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #ccc; }
-        input { width: 70%; padding: 10px; margin-bottom: 10px; }
-        button { padding: 10px; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #333; padding: 10px; text-align: center; background: #fff; }
-        .btn-add { background: #28a745; color: white; }
-        .btn-backup { background: #007bff; color: white; margin-top: 20px; width: 100%; }
+        body { font-family: Tahoma, sans-serif; padding: 10px; background: #f4f7f6; direction: rtl; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 60%; margin-bottom: 5px; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #27ae60; color: white; margin-bottom: 5px; }
+        .btn-step { background: #2980b9; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #ccc; padding: 12px; text-align: center; font-size: 13px; }
+        th { background: #34495e; color: white; }
+        td { cursor: pointer; white-space: pre-wrap; min-height: 60px; }
+        td:hover { background: #f9f9f9; }
+        .backup-btn { background: #8e44ad; color: white; width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h3>🛠 ثبت پروژه و مراحل</h3>
-    <input type="text" id="pIn" placeholder="نام پروژه">
+    <h3 style="margin-top:0">🛠 مدیریت هوشمند کارگاه</h3>
+    
+    <input type="text" id="pIn" placeholder="نام پروژه جدید">
     <button class="btn-add" onclick="addP()">+ پروژه</button>
     <br>
-    <input type="text" id="sIn" placeholder="نام مرحله">
-    <button class="btn-add" style="background:#17a2b8" onclick="addS()">+ مرحله</button>
+    <input type="text" id="sIn" placeholder="مرحله جدید">
+    <button class="btn-step" onclick="addS()">+ مرحله</button>
 
     <div style="overflow-x: auto;">
-        <table id="myTable">
-            <thead id="head"></thead>
-            <tbody id="body"></tbody>
+        <table>
+            <thead id="h"></thead>
+            <tbody id="b"></tbody>
         </table>
     </div>
 
-    <button class="btn-backup" onclick="exportData()">💾 دانلود فایل پشتیبان (Cloud Backup)</button>
+    <button class="backup-btn" onclick="exportJSON()">💾 دانلود فایل پشتیبان (Cloud Backup)</button>
 </div>
 
 <script>
-    // کلید اختصاصی برای حافظه
-    var ST = JSON.parse(localStorage.getItem('ST_STORE')) || [];
-    var PR = JSON.parse(localStorage.getItem('PR_STORE')) || [];
+    var S = JSON.parse(localStorage.getItem('S_V14')) || [];
+    var P = JSON.parse(localStorage.getItem('P_V14')) || [];
 
-    function refresh() {
-        localStorage.setItem('ST_STORE', JSON.stringify(ST));
-        localStorage.setItem('PR_STORE', JSON.stringify(PR));
+    function render() {
+        localStorage.setItem('S_V14', JSON.stringify(S));
+        localStorage.setItem('P_V14', JSON.stringify(P));
 
-        // رندر سرتیترها
-        var h = document.getElementById('head');
-        h.innerHTML = '<tr><th>نام پروژه</th>' + ST.map(s => '<th>' + s + '</th>').join('') + '</tr>';
+        document.getElementById('h').innerHTML = '<tr><th>پروژه</th>' + S.map((s,i) => `<th>${s}<br><small onclick="delS(${i})" style="color:#e74c3c;cursor:pointer;">(حذف)</small></th>`).join('') + '</tr>';
 
-        // رندر ردیف‌ها
-        var b = document.getElementById('body');
-        b.innerHTML = '';
-        PR.forEach((p, pi) => {
-            var row = '<tr><td><b>' + p.n + '</b></td>';
-            ST.forEach((s, si) => {
-                var d = p.d[si] || '';
-                row += '<td onclick="update('+pi+','+si+')">' + d + '</td>';
+        var html = '';
+        P.forEach((p, pi) => {
+            html += `<tr><td style="background:#eee"><b>${p.n}</b><br><small onclick="delP(${pi})" style="color:#e74c3c;cursor:pointer;">(حذف پروژه)</small></td>`;
+            S.forEach((s, si) => {
+                var content = p.d[si] || '';
+                html += `<td onclick="editCell(${pi}, ${si})">${content}</td>`;
             });
-            row += '</tr>';
-            b.innerHTML += row;
+            html += '</tr>';
         });
+        document.getElementById('b').innerHTML = html;
     }
 
-    function addP() {
-        var v = document.getElementById('pIn').value;
-        if(v) { PR.push({n:v, d:{}}); document.getElementById('pIn').value=''; refresh(); }
-    }
+    function addP() { var v = document.getElementById('pIn').value; if(v){ P.push({n:v, d:{}}); document.getElementById('pIn').value=''; render(); } }
+    function addS() { var v = document.getElementById('sIn').value; if(v){ S.push(v); document.getElementById('sIn').value=''; render(); } }
+    function delP(i) { if(confirm('کل پروژه حذف شود؟')) { P.splice(i,1); render(); } }
+    function delS(i) { if(confirm('این مرحله حذف شود؟')) { S.splice(i,1); P.forEach(p=>delete p.d[i]); render(); } }
 
-    function addS() {
-        var v = document.getElementById('sIn').value;
-        if(v) { ST.push(v); document.getElementById('sIn').value=''; refresh(); }
-    }
-
-    function update(pi, si) {
-        var txt = prompt("گزارش جدید:");
-        if(txt !== null) {
-            var now = new Date();
-            var time = now.toLocaleDateString('fa-IR') + ' (' + now.getHours() + ':' + now.getMinutes() + ')';
-            PR[pi].d[si] = time + ": " + txt + "<br>" + (PR[pi].d[si] || "");
-            refresh();
+    function editCell(pi, si) {
+        var oldText = P[pi].d[si] || '';
+        // حذف تگ‌های <br> برای نمایش تمیز در ویرایش
+        var cleanText = oldText.replace(/<br>/g, '\n');
+        
+        var newNote = prompt("ویرایش گزارش (برای ثبت زمان جدید، متن را اضافه کنید):", cleanText);
+        
+        if (newNote !== null) {
+            if (newNote.trim() === "") {
+                P[pi].d[si] = ""; // پاکسازی سلول
+            } else if (newNote !== cleanText) {
+                // اگر متن تغییر کرده بود، ساعت جدید بزن
+                var now = new Date();
+                var stamp = now.toLocaleDateString('fa-IR') + " [" + now.getHours() + ":" + now.getMinutes() + "]";
+                // اضافه کردن متن جدید به ابتدای متن قبلی
+                P[pi].d[si] = stamp + ": " + newNote.replace(/\n/g, '<br>') + "<br>" + oldText;
+            }
+            render();
         }
     }
 
-    function exportData() {
-        var data = JSON.stringify({ST, PR});
+    function exportJSON() {
+        var data = JSON.stringify({S, P});
         var blob = new Blob([data], {type: "application/json"});
         var a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "workshop_backup.json";
         a.click();
-        alert("فایل پشتیبان دانلود شد. آن را در تلگرام یا ایمیل خود ذخیره کنید.");
     }
 
-    refresh();
+    render();
 </script>
 </body>
 </html>
