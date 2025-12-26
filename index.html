@@ -7,13 +7,17 @@
         body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f9f9f9; }
         .box { background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ddd; }
         input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 5px; }
-        button { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; }
+        button { padding: 10px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #444; padding: 10px; text-align: center; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
         th { background: #34495e; color: white; }
-        .p-name { cursor: pointer; color: #2c3e50; font-weight: bold; }
+        .p-name { cursor: pointer; color: #2c3e50; font-weight: bold; display: block; margin-bottom: 5px; }
         .s-name { cursor: pointer; color: #fff; }
-        .done { background: #d4edda !important; }
+        .done-p { background: #d4edda !important; } /* سبز برای کل پروژه */
+        .done-s { background: #e3f2fd !important; border: 2px solid #2196f3 !important; } /* آبی برای اتمام مرحله */
+        .log-text { text-align: right; font-size: 12px; white-space: pre-wrap; line-height: 1.6; }
+        .cell-btns { margin-top: 8px; display: flex; gap: 5px; justify-content: center; }
+        .btn-tiny { font-size: 9px; padding: 4px 6px; color: #fff; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -28,7 +32,7 @@
     </div>
 
     <div style="overflow-x: auto;">
-        <table border="1">
+        <table>
             <thead id="h_t"></thead>
             <tbody id="b_t"></tbody>
         </table>
@@ -38,40 +42,36 @@
 </div>
 
 <script>
-    // استفاده از متغیرهای ساده برای جلوگیری از قفل شدن مرورگر
-    var prjs = [];
-    var stps = [];
-
-    // تلاش برای خواندن اطلاعات قبلی
-    try {
-        prjs = JSON.parse(localStorage.getItem('P_DATA')) || [];
-        stps = JSON.parse(localStorage.getItem('S_DATA')) || [];
-    } catch(e) { console.log("Memory Reset"); }
+    var prjs = JSON.parse(localStorage.getItem('P_DATA_V3')) || [];
+    var stps = JSON.parse(localStorage.getItem('S_DATA_V3')) || [];
 
     function refresh() {
-        // ذخیره در حافظه
-        localStorage.setItem('P_DATA', JSON.stringify(prjs));
-        localStorage.setItem('S_DATA', JSON.stringify(stps));
+        localStorage.setItem('P_DATA_V3', JSON.stringify(prjs));
+        localStorage.setItem('S_DATA_V3', JSON.stringify(stps));
 
-        // رندر تیترها (مراحل)
         var h = document.getElementById('h_t');
-        var headHtml = '<tr><th>پروژه (ادیت)</th>';
+        var headHtml = '<tr><th>پروژه</th>';
         for(var i=0; i<stps.length; i++) {
-            headHtml += '<th><span class="s-name" onclick="editS('+i+')">'+stps[i]+'</span><br><small onclick="delS('+i+')" style="color:red;font-size:10px">[حذف]</small></th>';
+            headHtml += '<th><span class="s-name" onclick="editS('+i+')">'+stps[i]+'</span><br><small onclick="delS('+i+')" style="color:#ff7675;cursor:pointer;font-size:10px">[حذف]</small></th>';
         }
         h.innerHTML = headHtml + '</tr>';
 
-        // رندر ردیف‌ها (پروژه‌ها)
         var b = document.getElementById('b_t');
         b.innerHTML = '';
         for(var j=0; j<prjs.length; j++) {
             var p = prjs[j];
-            var rowHtml = '<tr class="'+(p.f?'done':'')+'">';
-            rowHtml += '<td><span class="p-name" onclick="editP('+j+')">'+p.n+'</span><br><button onclick="toggleP('+j+')" style="background:#666;font-size:9px;padding:3px">'+(p.f?'بازگشت':'اتمام')+'</button></td>';
+            var rowHtml = '<tr class="'+(p.f?'done-p':'')+'">';
+            rowHtml += '<td><span class="p-name" onclick="editP('+j+')">'+p.n+'</span>' +
+                       '<button onclick="toggleP('+j+')" class="btn-tiny" style="background:#636e72">'+(p.f?'بازگشت':'اتمام کل')+'</button></td>';
             
             for(var k=0; k<stps.length; k++) {
-                var d = p.d[k] || '';
-                rowHtml += '<td onclick="editCell('+j+','+k+')">'+d+'</td>';
+                var d = p.d[k] || {t:'', f:false};
+                var cellClass = d.f ? 'done-s' : '';
+                rowHtml += '<td class="'+cellClass+'">' +
+                           '<div class="log-text" onclick="editCell('+j+','+k+')">' + (d.t || '---') + '</div>' +
+                           '<div class="cell-btns">' +
+                           '<button onclick="toggleStep('+j+','+k+')" class="btn-tiny" style="background:#0984e3">'+(d.f?'↩':'✅ اتمام')+'</button>' +
+                           '</div></td>';
             }
             rowHtml += '</tr>';
             b.innerHTML += rowHtml;
@@ -79,44 +79,35 @@
     }
 
     function addProject() {
-        var val = document.getElementById('p_in').value;
-        if(val) {
-            prjs.push({n: val, d: {}, f: false});
-            document.getElementById('p_in').value = '';
-            refresh();
-        } else { alert("نام پروژه را بنویسید"); }
+        var v = document.getElementById('p_in').value;
+        if(v) { prjs.push({n:v, d:{}, f:false}); document.getElementById('p_in').value=''; refresh(); }
     }
 
     function addStep() {
-        var val = document.getElementById('s_in').value;
-        if(val) {
-            stps.push(val);
-            document.getElementById('s_in').value = '';
-            refresh();
-        } else { alert("نام مرحله را بنویسید"); }
+        var v = document.getElementById('s_in').value;
+        if(v) { stps.push(v); document.getElementById('s_in').value=''; refresh(); }
     }
 
-    // قابلیت ادیت نام پروژه
-    function editP(i) {
-        var n = prompt("ویرایش نام پروژه:", prjs[i].n);
-        if(n) { prjs[i].n = n; refresh(); }
-    }
-
-    // قابلیت ادیت نام مرحله
-    function editS(i) {
-        var n = prompt("ویرایش نام مرحله:", stps[i]);
-        if(n) { stps[i] = n; refresh(); }
-    }
+    function editP(i) { var n = prompt("ویرایش نام پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
+    function editS(i) { var n = prompt("ویرایش نام مرحله:", stps[i]); if(n) { stps[i] = n; refresh(); } }
 
     function editCell(pi, si) {
-        var old = prjs[pi].d[si] || '';
-        var txt = prompt("گزارش:", old.replace(/<br>/g, '\n'));
-        if(txt !== null) {
+        if(!prjs[pi].d[si]) prjs[pi].d[si] = {t:'', f:false};
+        var oldTxt = prjs[pi].d[si].t.replace(/<br>/g, '\n');
+        var txt = prompt("یادداشت جدید (اینتر بزنید اعمال می‌شود):", "");
+        if(txt) {
             var now = new Date();
-            var time = now.getHours() + ":" + now.getMinutes();
-            prjs[pi].d[si] = time + " - " + txt.replace(/\n/g, '<br>') + "<br>" + old;
+            var time = "[" + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes() + "]";
+            var newEntry = time + " " + txt.replace(/\n/g, '<br>');
+            prjs[pi].d[si].t = newEntry + "<br>" + prjs[pi].d[si].t;
             refresh();
         }
+    }
+
+    function toggleStep(pi, si) {
+        if(!prjs[pi].d[si]) prjs[pi].d[si] = {t:'', f:false};
+        prjs[pi].d[si].f = !prjs[pi].d[si].f;
+        refresh();
     }
 
     function toggleP(i) { prjs[i].f = !prjs[i].f; refresh(); }
@@ -126,7 +117,7 @@
         var blob = new Blob([JSON.stringify({prjs, stps})], {type: 'application/json'});
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "data.json"; a.click();
+        a.download = "workshop_backup.json"; a.click();
     }
 
     refresh();
