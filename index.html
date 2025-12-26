@@ -4,65 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma; padding: 10px; background: #f0f0f0; direction: rtl; }
-        .box { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px #bbb; }
-        .inputs { margin-bottom: 15px; }
-        input { padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 5px; margin: 5px 0; }
+        body { font-family: Tahoma; padding: 10px; background: #f4f4f4; direction: rtl; }
+        .container { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px #bbb; }
+        .input-box { margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        input { padding: 10px; width: 65%; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; }
         button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
-        th, td { border: 1px solid #444; padding: 10px; text-align: center; font-size: 13px; }
-        th { background: #34495e; color: #fff; }
-        .p-done { background: #c8e6c9 !important; }
-        .s-done { background: #e3f2fd; border: 2px solid #2196f3 !important; }
-        .edit-btn { font-size: 10px; color: #ffeb3b; display: block; cursor: pointer; margin-top: 5px; }
-        .del-btn { font-size: 10px; color: #ff5252; display: block; cursor: pointer; margin-top: 5px; }
+        .btn-p { background: #27ae60; color: white; }
+        .btn-s { background: #2980b9; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: center; font-size: 13px; }
+        th { background: #34495e; color: white; }
+        .p-done { background: #d4edda !important; }
+        .s-done { background: #e3f2fd; border: 2px solid #2196f3 !important; font-weight: bold; }
+        .action-link { font-size: 10px; display: block; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <div class="inputs">
-        <input type="text" id="p_input" placeholder="نام پروژه جدید">
-        <button onclick="addNewP()" style="background:#27ae60; color:#fff">+ پروژه</button>
+<div class="container">
+    <div class="input-box">
+        <input type="text" id="pInput" placeholder="نام پروژه جدید">
+        <button class="btn-p" onclick="addP()">+ پروژه</button>
         <br>
-        <input type="text" id="s_input" placeholder="نام مرحله جدید">
-        <button onclick="addNewS()" style="background:#2980b9; color:#fff">+ مرحله</button>
+        <input type="text" id="sInput" placeholder="نام مرحله جدید">
+        <button class="btn-s" onclick="addS()">+ مرحله</button>
     </div>
 
     <div style="overflow-x: auto;">
         <table>
-            <thead id="h_table"></thead>
-            <tbody id="b_table"></tbody>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
         </table>
     </div>
-    
-    <button onclick="downloadJSON()" style="width:100%; margin-top:20px; background:#8e44ad; color:#fff; padding:12px;">💾 ذخیره فایل پشتیبان</button>
+
+    <button onclick="downloadBackup()" style="width:100%; margin-top:20px; background:#8e44ad; color:white; padding:12px;">💾 ذخیره فایل پشتیبان</button>
 </div>
 
 <script>
-    // استفاده از کلید کاملاً جدید برای رفع مشکل اضافه نشدن
-    var KEY_S = "FINAL_STEPS_V20";
-    var KEY_P = "FINAL_PROJS_V20";
+    // استفاده از کلید کاملاً جدید برای اطمینان از کارکرد دکمه‌ها
+    var STORAGE_S = "WRK_STEPS_V25";
+    var STORAGE_P = "WRK_PROJS_V25";
 
-    var steps = JSON.parse(localStorage.getItem(KEY_S)) || [];
-    var projs = JSON.parse(localStorage.getItem(KEY_P)) || [];
+    var steps = JSON.parse(localStorage.getItem(STORAGE_S)) || [];
+    var projs = JSON.parse(localStorage.getItem(STORAGE_P)) || [];
 
-    function sync() {
-        localStorage.setItem(KEY_S, JSON.stringify(steps));
-        localStorage.setItem(KEY_P, JSON.stringify(projs));
+    function render() {
+        localStorage.setItem(STORAGE_S, JSON.stringify(steps));
+        localStorage.setItem(STORAGE_P, JSON.stringify(projs));
 
-        // رندر سرتیترها (مراحل)
-        var h = document.getElementById('h_table');
-        var hHtml = '<tr><th>پروژه</th>';
-        for(var i=0; i<steps.length; i++) {
-            hHtml += '<th>' + 
-                     '<span onclick="renameS('+i+')">' + steps[i] + '</span>' +
-                     '<small class="del-btn" onclick="delS('+i+')">حذف</small></th>';
-        }
-        h.innerHTML = hHtml + '</tr>';
-
-        // رندر بدنه (پروژه‌ها)
-        var b = document.getElementById('b_table');
-        var bHtml = '';
-        for(var j=0; j<projs.length; j++) {
-            var p = projs[j];
+        // ۱. ساخت سرتیترها (مراحل)
+        var thead = document.getElementById('thead');
+        var headHtml = '<tr><th>نام پروژه</th>';
+        for (var i = 0; i < steps.length; i++) {
+            headHtml += '<th>' + 
+                        '<span onclick="
