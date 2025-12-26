@@ -4,83 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: sans-serif; background: #eee; padding: 10px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        input { width: 70%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        body { font-family: Tahoma, sans-serif; background: #f4f4f4; padding: 10px; direction: rtl; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { width: 60%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
+        .btn-p { background: #28a745; color: white; }
+        .btn-s { background: #007bff; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #000; padding: 8px; text-align: center; }
-        th { background: #333; color: white; }
-        .log { text-align: right; font-size: 11px; color: #444; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
+        th { background: #34495e; color: white; }
+        .log-container { text-align: right; font-size: 11px; min-height: 40px; line-height: 1.6; }
+        .date-tag { color: #e67e22; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; }
+        .old-logs { color: #555; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h3>مدیریت کارگاه (نسخه فوق‌سریع)</h3>
-    <input type="text" id="p" placeholder="نام پروژه"> <button onclick="addP()" style="background:green; color:white">ثبت پروژه</button>
+    <h2 style="text-align:center">مدیریت پروژه و مراحل</h2>
+    
+    <input type="text" id="p_name" placeholder="نام پروژه جدید">
+    <button class="btn-p" onclick="addP()">+ پروژه</button>
     <br>
-    <input type="text" id="s" placeholder="نام مرحله"> <button onclick="addS()" style="background:blue; color:white">ثبت مرحله</button>
+    <input type="text" id="s_name" placeholder="نام مرحله جدید">
+    <button class="btn-s" onclick="addS()">+ مرحله</button>
 
-    <table id="tbl">
-        <thead id="h"></thead>
-        <tbody id="b"></tbody>
-    </table>
+    <div style="overflow-x: auto;">
+        <table id="mainTable">
+            <thead id="h_t"></thead>
+            <tbody id="b_t"></tbody>
+        </table>
+    </div>
+
+    <br>
+    <button onclick="saveData()" style="background:#6f42c1; color:white; width:100%">💾 ذخیره کل اطلاعات (پشتیبان)</button>
 </div>
 
 <script>
-    // استفاده از یک سیستم بسیار ساده برای ذخیره‌سازی
-    var prjs = [];
-    var stps = [];
-
-    function addP() {
-        var n = document.getElementById('p').value;
-        if(n) {
-            prjs.push({name: n, logs: []});
-            document.getElementById('p').value = "";
-            draw();
-        }
-    }
-
-    function addS() {
-        var n = document.getElementById('s').value;
-        if(n) {
-            stps.push(n);
-            document.getElementById('s').value = "";
-            draw();
-        }
-    }
+    // بازیابی اطلاعات از حافظه
+    var projects = JSON.parse(localStorage.getItem('W_DATA_V12')) || [];
+    var steps = JSON.parse(localStorage.getItem('S_DATA_V12')) || [];
 
     function draw() {
-        var h = document.getElementById('h');
-        var b = document.getElementById('b');
-        
-        // رسم سرتیتر
-        var rowH = '<tr><th>نام پروژه</th>';
-        for(var i=0; i<stps.length; i++) { rowH += '<th>'+stps[i]+'</th>'; }
-        h.innerHTML = rowH + '</tr>';
+        // ذخیره در حافظه گوشی
+        localStorage.setItem('W_DATA_V12', JSON.stringify(projects));
+        localStorage.setItem('S_DATA_V12', JSON.stringify(steps));
 
-        // رسم محتوا
-        var htmlB = '';
-        for(var j=0; j<prjs.length; j++) {
-            htmlB += '<tr><td><b>'+prjs[j].name+'</b></td>';
-            for(var k=0; k<stps.length; k++) {
-                var content = prjs[j].logs[k] || "---";
-                htmlB += '<td onclick="addLog('+j+','+k+')"><div class="log">'+content+'</div></td>';
-            }
-            htmlB += '</tr>';
+        // رسم هدر (مراحل)
+        var h = document.getElementById('h_t');
+        var headHtml = '<tr><th>پروژه‌ها</th>';
+        for(var i=0; i<steps.length; i++) {
+            headHtml += '<th>' + steps[i] + '</th>';
         }
-        b.innerHTML = htmlB;
-    }
+        h.innerHTML = headHtml + '</tr>';
 
-    function addLog(pIdx, sIdx) {
-        var val = prompt("گزارش را بنویسید:");
-        if(val) {
-            var d = new Date().toLocaleDateString('fa-IR');
-            prjs[pIdx].logs[sIdx] = d + ": " + val;
-            draw();
-        }
-    }
-</script>
-</body>
-</html>
+        // رسم ردیف‌ها (پروژه‌ها)
+        var b = document.getElementById('b_t');
+        var bodyHtml = '';
+        for(var j=0; j<projects.length; j++) {
+            bodyHtml += '<tr><td><b>' + projects[j].name + '</b></td>';
+            for(var k=0; k<steps.length; k++) {
+                // دریافت یادداشت‌های این سلول
+                var logs = projects[j].cells[k] || "";
+                bodyHtml += '<td onclick="addLog('+j+','+k+')">
