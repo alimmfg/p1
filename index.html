@@ -1,151 +1,233 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>مدیریت پروژه</title>
+<title>مدیریت کارگاه</title>
 <style>
-body{font-family:Tahoma;background:#f4f4f4;margin:0;padding:10px}
-.project{background:#fff;border-radius:10px;padding:10px;margin-bottom:10px}
-.project-title{font-weight:bold;font-size:18px;cursor:pointer}
-.step{margin-top:8px;padding:6px;border:1px solid #ddd;border-radius:6px}
-.step-title{font-weight:bold;cursor:pointer}
-.log{background:#eee;padding:6px;border-radius:6px;margin-top:5px;cursor:pointer}
-.done{opacity:.5;text-decoration:line-through}
-button{margin-top:5px}
+body{
+    font-family:Tahoma;
+    background:#f2f2f2;
+    padding:15px;
+    font-size:16px;
+}
+button{
+    padding:8px 12px;
+    margin:4px;
+    font-size:15px;
+    cursor:pointer;
+}
+.project{
+    background:white;
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:15px;
+    border:1px solid #ccc;
+}
+.project-title{
+    font-size:20px;
+    font-weight:bold;
+    cursor:pointer;
+}
+.step{
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:8px;
+    margin-top:10px;
+}
+.step-title{
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+}
+.log{
+    background:#eee;
+    padding:8px;
+    border-radius:6px;
+    margin-top:6px;
+    cursor:pointer;
+    font-size:14px;
+}
+.log-date{
+    font-size:12px;
+    color:#555;
+    margin-bottom:4px;
+}
+.done{
+    opacity:0.5;
+    text-decoration:line-through;
+}
+
+/* مودال یادداشت */
+#modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    z-index:999;
+    align-items:center;
+    justify-content:center;
+}
+#modalBox{
+    background:white;
+    padding:15px;
+    width:90%;
+    max-width:450px;
+    border-radius:10px;
+}
+textarea{
+    width:100%;
+    font-family:Tahoma;
+    font-size:15px;
+}
 </style>
 </head>
 
 <body>
 
-<button onclick="newProject()">➕ پروژه جدید</button>
+<button onclick="addProject()">➕ پروژه</button>
+<button onclick="backup()">💾 بک‌آپ</button>
+<button onclick="document.getElementById('file').click()">📥 بارگذاری بک‌آپ</button>
+<input type="file" id="file" style="display:none" onchange="restore(event)">
+
 <div id="app"></div>
 
 <!-- مودال یادداشت -->
-<div id="logModal" style="
-display:none;
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:rgba(0,0,0,0.5);
-z-index:999;
-align-items:center;
-justify-content:center;
-">
-<div style="background:white;padding:15px;border-radius:10px;width:90%;max-width:400px;">
-<h4>یادداشت</h4>
-<textarea id="logText" rows="6" style="width:100%;font-family:Tahoma"></textarea>
-<br><br>
+<div id="modal">
+<div id="modalBox">
+<h3>یادداشت</h3>
+<textarea id="logText" rows="6"></textarea><br><br>
 <button onclick="saveLog()">ثبت</button>
-<button onclick="closeLog()">انصراف</button>
+<button onclick="closeModal()">انصراف</button>
 </div>
 </div>
 
 <script>
-var prjs = [];
-var curP=null, curS=null, curL=null;
-var app = document.getElementById("app");
-var logModal=document.getElementById("logModal");
-var logText=document.getElementById("logText");
+let data = JSON.parse(localStorage.getItem("WORKSHOP_DATA")) || [];
+let curP=null, curS=null, curL=null;
 
-function newProject(){
-    var n = prompt("نام پروژه:");
-    if(!n) return;
-    prjs.push({n:n,s:[],f:false,c:{}});
-    refresh();
+function saveLocal(){
+    localStorage.setItem("WORKSHOP_DATA", JSON.stringify(data));
 }
 
-function refresh(){
+function addProject(){
+    let n = prompt("نام پروژه:");
+    if(!n) return;
+    data.push({n,steps:[],done:false,cell:{}});
+    saveLocal(); render();
+}
+
+function render(){
+    let app=document.getElementById("app");
     app.innerHTML="";
-    prjs.forEach((p,pi)=>{
-        var d=document.createElement("div");
-        d.className="project"+(p.f?" done":"");
-        d.innerHTML=`
-        <div class="project-title" onclick="editProject(${pi})">${p.n}</div>
-        <button onclick="newStep(${pi})">➕ مرحله</button>
-        <button onclick="finishProject(${pi})">اتمام پروژه</button>
+    data.forEach((p,pi)=>{
+        let pd=document.createElement("div");
+        pd.className="project"+(p.done?" done":"");
+        pd.innerHTML=`
+            <div class="project-title" onclick="editProject(${pi})">${p.n}</div>
+            <button onclick="addStep(${pi})">➕ مرحله</button>
+            <button onclick="finishProject(${pi})">اتمام پروژه</button>
         `;
-        p.s.forEach((s,si)=>{
-            var sd=document.createElement("div");
-            sd.className="step"+(p.c[si]?.f?" done":"");
+        p.steps.forEach((s,si)=>{
+            let sd=document.createElement("div");
+            let finished = p.cell[si]?.done;
+            sd.className="step"+(finished?" done":"");
             sd.innerHTML=`
-            <div class="step-title" onclick="editStep(${pi},${si})">${s}</div>
-            <button onclick="addLog(${pi},${si})">یادداشت</button>
-            <button onclick="finishStep(${pi},${si})">اتمام مرحله</button>
+                <div class="step-title" onclick="editStep(${pi},${si})">${s}</div>
+                <button onclick="openLog(${pi},${si})">یادداشت</button>
+                <button onclick="finishStep(${pi},${si})">اتمام مرحله</button>
             `;
-            (p.c[si]?.logs||[]).forEach((l,li)=>{
-                var lg=document.createElement("div");
-                lg.className="log";
-                lg.innerHTML=l.t.replace(/\n/g,"<br>");
-                lg.onclick=()=>editLog(pi,si,li);
-                sd.appendChild(lg);
+            (p.cell[si]?.logs||[]).forEach((l,li)=>{
+                let ld=document.createElement("div");
+                ld.className="log";
+                ld.innerHTML=`
+                    <div class="log-date">${l.d}</div>
+                    ${l.t.replace(/\n/g,"<br>")}
+                `;
+                ld.onclick=()=>editLog(pi,si,li);
+                sd.appendChild(ld);
             });
-            d.appendChild(sd);
+            pd.appendChild(sd);
         });
-        app.appendChild(d);
+        app.appendChild(pd);
     });
 }
 
-function editProject(pi){
-    var n=prompt("نام پروژه:",prjs[pi].n);
-    if(n) prjs[pi].n=n;
-    refresh();
+function editProject(i){
+    let n=prompt("ویرایش نام پروژه:",data[i].n);
+    if(n){ data[i].n=n; saveLocal(); render(); }
+}
+
+function addStep(i){
+    let n=prompt("نام مرحله:");
+    if(!n) return;
+    data[i].steps.push(n);
+    saveLocal(); render();
 }
 
 function editStep(pi,si){
-    var n=prompt("نام مرحله:",prjs[pi].s[si]);
-    if(n) prjs[pi].s[si]=n;
-    refresh();
+    let n=prompt("ویرایش نام مرحله:",data[pi].steps[si]);
+    if(n){ data[pi].steps[si]=n; saveLocal(); render(); }
 }
 
-function newStep(pi){
-    var n=prompt("نام مرحله:");
-    if(!n) return;
-    prjs[pi].s.push(n);
-    refresh();
-}
-
-function finishProject(pi){
-    prjs[pi].f=true;
-    refresh();
+function finishProject(i){
+    data[i].done=true;
+    saveLocal(); render();
 }
 
 function finishStep(pi,si){
-    if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[],f:false};
-    prjs[pi].c[si].f=true;
-    refresh();
+    if(!data[pi].cell[si]) data[pi].cell[si]={logs:[],done:false};
+    data[pi].cell[si].done=true;
+    saveLocal(); render();
 }
 
-function addLog(pi,si){
-    curP=pi;curS=si;curL=null;
-    logText.value="";
-    logModal.style.display="flex";
-    logText.focus();
+function openLog(pi,si){
+    curP=pi; curS=si; curL=null;
+    document.getElementById("logText").value="";
+    document.getElementById("modal").style.display="flex";
 }
 
 function editLog(pi,si,li){
-    curP=pi;curS=si;curL=li;
-    logText.value=prjs[pi].c[si].logs[li].t;
-    logModal.style.display="flex";
-    logText.focus();
+    curP=pi; curS=si; curL=li;
+    document.getElementById("logText").value=data[pi].cell[si].logs[li].t;
+    document.getElementById("modal").style.display="flex";
 }
 
 function saveLog(){
-    var t=logText.value;
+    let t=document.getElementById("logText").value;
     if(!t.trim()) return;
-    if(!prjs[curP].c[curS])
-        prjs[curP].c[curS]={logs:[],f:false};
+    if(!data[curP].cell[curS]) data[curP].cell[curS]={logs:[],done:false};
+    let now=new Date().toLocaleString("fa-IR");
     if(curL!=null){
-        prjs[curP].c[curS].logs[curL].t=t;
+        data[curP].cell[curS].logs[curL].t=t;
     }else{
-        prjs[curP].c[curS].logs.unshift({t:t});
+        data[curP].cell[curS].logs.unshift({t,d:now});
     }
-    closeLog();
-    refresh();
+    saveLocal();
+    closeModal(); render();
 }
 
-function closeLog(){
-    logModal.style.display="none";
+function closeModal(){
+    document.getElementById("modal").style.display="none";
 }
+
+function backup(){
+    let blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="workshop-backup.json";
+    a.click();
+}
+
+function restore(e){
+    let r=new FileReader();
+    r.onload=function(){
+        data=JSON.parse(r.result);
+        saveLocal(); render();
+    };
+    r.readAsText(e.target.files[0]);
+}
+
+render();
 </script>
 </body>
 </html>
