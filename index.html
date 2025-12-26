@@ -3,110 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت کارگاه</title>
     <style>
-        body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f9f9f9; }
-        .box { background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ddd; }
-        .header-logo { text-align: center; margin-bottom: 20px; }
-        .header-logo img { width: 120px; height: auto; border-radius: 15px; }
-        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 5px; }
-        button { padding: 10px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
-        th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
-        th { background: #34495e; color: white; font-size: 13px; }
-        .p-name { cursor: pointer; color: #2c3e50; font-weight: bold; display: block; margin-bottom: 5px; }
-        .done-p { background: #d4edda !important; } 
-        .done-s { background: #e3f2fd !important; border: 2px solid #2196f3 !important; } 
-        .log-text { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.6; }
-        .date-label { color: #d35400; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px dashed #ccc; margin-top: 5px; margin-bottom: 3px; }
-        .btn-tiny { font-size: 9px; padding: 4px 6px; color: #fff; border-radius: 4px; margin-top: 5px; }
+        body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f0f2f5; }
+        .box { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 20px; color: #1a73e8; }
+        input { padding: 12px; width: 65%; border: 2px solid #dfe1e5; border-radius: 8px; font-size: 14px; }
+        button { padding: 10px 15px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; margin: 2px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: center; vertical-align: top; }
+        th { background: #34495e; color: white; }
+        .done-p { background: #d4edda !important; }
+        .done-s { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
+        .date-label { color: #d35400; font-weight: bold; font-size: 10px; display: block; margin-bottom: 4px; border-bottom: 1px solid #eee; }
+        .log-text { text-align: right; font-size: 12px; white-space: pre-wrap; cursor: pointer; min-height: 30px; }
+        .btn-tiny { font-size: 10px; padding: 5px; margin-top: 5px; width: 100%; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <div class="header-logo">
-        <h2 style="color: #2c3e50;">مدیریت هوشمند کارگاه</h2>
-    </div>
+    <div class="header"><h2>🛠 مدیریت کارگاه</h2></div>
 
-    <div style="margin-bottom: 20px;">
-        <input type="text" id="p_in" placeholder="نام پروژه جدید">
-        <button onclick="addProject()" style="background:#27ae60">+ پروژه</button>
-        <br>
-        <input type="text" id="s_in" placeholder="نام مرحله جدید">
-        <button onclick="addStep()" style="background:#2980b9">+ مرحله</button>
+    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+        <input type="text" id="p_in" placeholder="نام پروژه (مثل: تابلو برق فلان)">
+        <button onclick="addProject()" style="background:#28a745">+ افزودن پروژه</button>
+        <br><br>
+        <input type="text" id="s_in" placeholder="نام مرحله (مثل: سیم‌کشی)">
+        <button onclick="addStep()" style="background:#007bff">+ افزودن مرحله</button>
     </div>
 
     <div style="overflow-x: auto;">
-        <table>
+        <table id="mainTable">
             <thead id="h_t"></thead>
             <tbody id="b_t"></tbody>
         </table>
     </div>
 
-    <div style="margin-top:20px; display: flex; gap: 10px;">
-        <button onclick="exportData()" style="flex: 1; background:#8e44ad;">💾 دانلود پشتیبان</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#d63031;">📥 بارگذاری</button>
+    <div style="margin-top: 25px; display: flex; gap: 10px;">
+        <button onclick="exportData()" style="flex: 1; background:#6f42c1;">💾 ذخیره فایل پشتیبان</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#dc3545;">📥 بازگرداندن اطلاعات</button>
         <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
     </div>
 </div>
 
 <script>
-    var prjs = JSON.parse(localStorage.getItem('P_DATA_V6')) || [];
-    var stps = JSON.parse(localStorage.getItem('S_DATA_V6')) || [];
+    // استفاده از اسم جدید برای حافظه جهت رفع تداخل
+    var projects = JSON.parse(localStorage.getItem('WORKSHOP_FINAL_DATA')) || [];
+    var steps = JSON.parse(localStorage.getItem('WORKSHOP_STEPS')) || [];
 
     function refresh() {
-        localStorage.setItem('P_DATA_V6', JSON.stringify(prjs));
-        localStorage.setItem('S_DATA_V6', JSON.stringify(stps));
+        localStorage.setItem('WORKSHOP_FINAL_DATA', JSON.stringify(projects));
+        localStorage.setItem('WORKSHOP_STEPS', JSON.stringify(steps));
 
-        var h = document.getElementById('h_t');
-        var headHtml = '<tr><th>پروژه</th>';
-        for(var i=0; i<stps.length; i++) {
-            headHtml += '<th><span onclick="editS('+i+')">'+stps[i]+'</span><br><small onclick="delS('+i+')" style="color:#ff7675;cursor:pointer;font-size:10px">[حذف]</small></th>';
-        }
-        h.innerHTML = headHtml + '</tr>';
-
-        var b = document.getElementById('b_t');
-        var bodyHtml = '';
-        for(var j=0; j<prjs.length; j++) {
-            var p = prjs[j];
-            bodyHtml += '<tr class="'+(p.f?'done-p':'')+'"><td><span class="p-name" onclick="editP('+j+')">'+p.n+'</span><button onclick="toggleP('+j+')" class="btn-tiny" style="background:#636e72">'+(p.f?'بازگشت':'اتمام کل')+'</button></td>';
-            for(var k=0; k<stps.length; k++) {
-                var d = p.d[k] || {t:'', f:false};
-                bodyHtml += '<td class="'+(d.f?'done-s':'')+'" onclick="editCell('+j+','+k+')"><div class="log-text">'+(d.t || '---')+'</div><button onclick="event.stopPropagation(); toggleStep('+j+','+k+')" class="btn-tiny" style="background:#0984e3">'+(d.f?'↩':'✅ اتمام')+'</button></td>';
-            }
-            bodyHtml += '</tr>';
-        }
-        b.innerHTML = bodyHtml;
-    }
-
-    function addProject() {
-        var v = document.getElementById('p_in').value;
-        if(v) { prjs.push({n:v, d:{}, f:false}); document.getElementById('p_in').value=''; refresh(); }
-    }
-
-    function addStep() {
-        var v = document.getElementById('s_in').value;
-        if(v) { stps.push(v); document.getElementById('s_in').value=''; refresh(); }
-    }
-
-    function editCell(pi, si) {
-        if(!prjs[pi].d[si]) prjs[pi].d[si] = {t:'', f:false};
-        var txt = prompt("گزارش جدید:");
-        if(txt) {
-            var now = new Date();
-            var time = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
-            var date = now.toLocaleDateString('fa-IR');
-            var newEntry = '<span class="date-label">' + date + ' - ' + time + '</span>' + txt;
-            prjs[pi].d[si].t = newEntry + "<br>" + prjs[pi].d[si].t;
-            refresh();
-        }
-    }
-
-    function toggleStep(pi, si) {
-        if(!prjs[pi].d[si]) prjs[pi].d[si] = {t:'', f:false};
-        prjs[pi].d[si].f = !prjs[pi].d[si].f;
-        refresh();
-    }
-
-    function editP(i) { var n = prompt("نام جدید:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
-    function editS(i) { var n = prompt("نام جدید:", stps[i]); if(n) { stps[i] = n; refresh(); } }
+        // رندر سر
