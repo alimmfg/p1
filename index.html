@@ -6,21 +6,27 @@
     <style>
         body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
         .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
-        button { padding: 8px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
-        .btn-p { background: #27ae60; color: white; }
-        .btn-s { background: #2980b9; color: white; }
+        input, textarea { padding: 12px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; font-family: Tahoma; }
+        .btn-p { background: #27ae60; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer; }
+        .btn-s { background: #2980b9; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #333; padding: 8px; text-align: center; vertical-align: top; }
         th { background: #34495e; color: white; position: sticky; top: 0; }
-        .clickable { cursor: pointer; transition: 0.2s; }
-        .clickable:hover { background: rgba(0,0,0,0.05); color: #e67e22; }
-        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; }
-        .date-tag { color: #d35400; font-weight: bold; font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        
+        .clickable-text { cursor: pointer; text-decoration: underline dotted #ccc; display: block; padding: 5px; }
+        .clickable-text:hover { color: #e67e22; background: #fafafa; }
+
+        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 12px; white-space: pre-wrap; cursor: pointer; }
+        .date-tag { color: #d35400; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        
+        /* استایل پنجره بازشو برای یادداشت */
+        #noteModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 100; width: 80%; max-width: 400px; }
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99; }
+        
+        .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; border: none; padding: 5px; border-radius: 4px; cursor: pointer; }
         .done-row { background: #d4edda !important; } 
         .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
-        .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; }
-        .del-x { color: #ff7675; cursor: pointer; font-size: 10px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -29,7 +35,6 @@
     <h3 style="text-align:center;">مدیریت هوشمند کارگاه</h3>
     <input type="text" id="p_in" placeholder="نام پروژه جدید">
     <button class="btn-p" onclick="addP()">+ پروژه</button>
-    <br>
     <input type="text" id="s_in" placeholder="نام مرحله جدید">
     <button class="btn-s" onclick="addS()">+ مرحله</button>
 
@@ -39,13 +44,105 @@
             <tbody id="tbody"></tbody>
         </table>
     </div>
+</div>
 
-    <div style="margin-top: 20px; display: flex; gap: 10px;">
-        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white;">💾 دانلود بک‌آپ</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white;">📥 بازیابی فایل</button>
-        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
+<div id="modalOverlay"></div>
+<div id="noteModal">
+    <h4>ثبت / ویرایش یادداشت</h4>
+    <textarea id="modalText" style="width: 100%; height: 150px;" placeholder="متن یادداشت را اینجا بنویسید... (اینتر بزنید برای خط بعد)"></textarea>
+    <div style="display:flex; gap:10px;">
+        <button onclick="saveNote()" style="flex:1; background:#27ae60; color:white; border:none; padding:10px; border-radius:8px;">ذخیره</button>
+        <button onclick="closeModal()" style="flex:1; background:#95a5a6; color:white; border:none; padding:10px; border-radius:8px;">انصراف</button>
     </div>
 </div>
 
 <script>
-    var prjs =
+    var prjs = JSON.parse(localStorage.getItem('K_V6')) || [];
+    var stps = JSON.parse(localStorage.getItem('S_V6')) || [];
+    var activeCell = null; // برای ردیابی اینکه کدام سلول در حال ویرایش است
+
+    function refresh() {
+        localStorage.setItem('K_V6', JSON.stringify(prjs));
+        localStorage.setItem('S_V6', JSON.stringify(stps));
+
+        var hHtml = '<tr><th>اطلاعات پروژه</th>';
+        stps.forEach((s, i) => {
+            hHtml += `<th><span class="clickable-text" onclick="editS(${i})">${s}</span>
+                      <small style="color:red;cursor:pointer" onclick="delS(${i})">[حذف]</small></th>`;
+        });
+        document.getElementById('thead').innerHTML = hHtml + '</tr>';
+
+        var bHtml = '';
+        prjs.forEach((p, j) => {
+            bHtml += `<tr class="${p.f ? 'done-row' : ''}">
+                <td>
+                    <b class="clickable-text" onclick="editP(${j})">${p.n}</b>
+                    <button class="btn-finish" onclick="finishP(${j})">${p.f?'↩ بازگشت':'✓ پایان پروژه'}</button>
+                    <button class="btn-finish" style="background:#e74c3c" onclick="delP(${j})">حذف کل پروژه</button>
+                </td>`;
+            stps.forEach((s, k) => {
+                var cell = p.c[k] || {logs:[], f:false};
+                var logsHtml = cell.logs.map((l, m) => 
+                    `<div class="log-item" onclick="event.stopPropagation(); openNoteModal(${j},${k},${m})">
+                        <span class="date-tag">${l.d}</span>${l.t}
+                    </div>`).join('');
+                
+                bHtml += `<td class="${cell.f ? 'done-cell' : ''}">
+                    <div style="min-height:60px;" onclick="openNoteModal(${j},${k})">
+                        ${logsHtml || '<small style="color:#ccc">کلیک برای یادداشت</small>'}
+                    </div>
+                    <button class="btn-finish" style="background:#2980b9" onclick="finishS(${j},${k})">${cell.f?'↩':'✅ اتمام'}</button>
+                </td>`;
+            });
+            bHtml += '</tr>';
+        });
+        document.getElementById('tbody').innerHTML = bHtml;
+    }
+
+    function openNoteModal(pjIdx, stIdx, logIdx = null) {
+        activeCell = { pjIdx, stIdx, logIdx };
+        var existingText = "";
+        if (logIdx !== null) {
+            existingText = prjs[pjIdx].c[stIdx].logs[logIdx].t;
+        }
+        document.getElementById('modalText').value = existingText;
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('noteModal').style.display = 'block';
+    }
+
+    function saveNote() {
+        var txt = document.getElementById('modalText').value;
+        if (!txt.trim()) {
+            if (activeCell.logIdx !== null) prjs[activeCell.pjIdx].c[activeCell.stIdx].logs.splice(activeCell.logIdx, 1);
+        } else {
+            if (!prjs[activeCell.pjIdx].c[activeCell.stIdx]) prjs[activeCell.pjIdx].c[activeCell.stIdx] = {logs:[], f:false};
+            
+            if (activeCell.logIdx !== null) {
+                prjs[activeCell.pjIdx].c[activeCell.stIdx].logs[activeCell.logIdx].t = txt;
+            } else {
+                var now = new Date().toLocaleDateString('fa-IR') + " " + new Date().getHours() + ":" + new Date().getMinutes();
+                prjs[activeCell.pjIdx].c[activeCell.stIdx].logs.unshift({d: now, t: txt});
+            }
+        }
+        closeModal();
+        refresh();
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+        document.getElementById('noteModal').style.display = 'none';
+    }
+
+    function addP() { var v = document.getElementById('p_in').value; if(v.trim()){ prjs.push({n:v, c:{}, f:false}); document.getElementById('p_in').value=""; refresh(); } }
+    function addS() { var v = document.getElementById('s_in').value; if(v.trim()){ stps.push(v); document.getElementById('s_in').value=""; refresh(); } }
+    function editS(i) { var n = prompt("نام جدید مرحله:", stps[i]); if(n) { stps[i] = n; refresh(); } }
+    function editP(i) { var n = prompt("نام جدید پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
+    function finishP(i) { prjs[i].f = !prjs[i].f; refresh(); }
+    function finishS(pi, si) { if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[], f:false}; prjs[pi].c[si].f = !prjs[pi].c[si].f; refresh(); }
+    function delP(i) { if(confirm("حذف پروژه؟")) { prjs.splice(i, 1); refresh(); } }
+    function delS(i) { if(confirm("حذف مرحله؟")) { stps.splice(i, 1); refresh(); } }
+
+    refresh();
+</script>
+</body>
+</html>
