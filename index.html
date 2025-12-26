@@ -1,49 +1,56 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت کارگاه v13</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
-        .box { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .input-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        input, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-family: Tahoma; }
-        button { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-p { background: #27ae60; color: white; }
-        .btn-s { background: #2980b9; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 12px; }
-        th { background: #34495e; color: white; }
-        .cell { cursor: pointer; white-space: pre-wrap; background: #fff; min-height: 50px; }
-        .step-done { background: #d4edda !important; border: 2px solid #28a745 !important; }
-        
-        /* دکمه‌های جدید پشتیبان‌گیری */
-        .backup-bar { margin-top: 25px; padding: 15px; background: #f9f9f9; border-radius: 10px; border: 1px dashed #aaa; text-align: center; }
-        .btn-backup { background: #8e44ad; color: white; margin: 5px; width: 45%; }
-        .btn-restore { background: #f39c12; color: white; margin: 5px; width: 45%; }
-        
-        #modal { display: none; position: fixed; top: 10%; left: 5%; right: 5%; background: white; padding: 20px; border: 2px solid #333; z-index: 1000; border-radius: 15px; }
+        body { font-family: tahoma; padding: 10px; }
+        button { padding: 10px; margin: 5px; cursor: pointer; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+        .done { background: #9f9; }
     </style>
 </head>
 <body>
-
-<div class="box">
-    <h3>📋 مدیریت تولید و سوابق</h3>
+    <h3>مدیریت تولید (نسخه سبک)</h3>
+    <input type="text" id="pI" placeholder="پروژه"> <button onclick="addP()">+ پروژه</button> <br>
+    <input type="text" id="sI" placeholder="مرحله"> <button onclick="addS()">+ مرحله</button>
     
-    <div class="input-group">
-        <input type="text" id="p_in" placeholder="پروژه جدید...">
-        <button class="btn-p" onclick="addP()">+ پروژه</button>
-        <input type="text" id="s_in" placeholder="مرحله جدید...">
-        <button class="btn-s" onclick="addS()">+ مرحله</button>
-    </div>
+    <table border="1"><thead id="h"></thead><tbody id="b"></tbody></table>
 
-    <div style="overflow-x:auto;">
-        <table>
-            <thead><tr id="h_row"></tr></thead>
-            <tbody id="t_body"></tbody>
-        </table>
-    </div>
+    <script>
+        var S = JSON.parse(localStorage.getItem('S1')) || [];
+        var P = JSON.parse(localStorage.getItem('P1')) || [];
 
-    <div class="backup-bar">
-        <p style="font-size: 12px; color: #666; margin-bottom: 1
+        function show() {
+            localStorage.setItem('S1', JSON.stringify(S));
+            localStorage.setItem('P1', JSON.stringify(P));
+            document.getElementById('h').innerHTML = '<tr><th>پروژه</th>' + S.map(s=>'<th>'+s+'</th>').join('') + '</tr>';
+            var html = '';
+            P.forEach((p,pi)=>{
+                html += '<tr><td>'+p.n+'</td>';
+                S.forEach((s,si)=>{
+                    var d = p.d[si] || {t:''};
+                    html += '<td onclick="addT('+pi+','+si+')">'+d.t+'</td>';
+                });
+                html += '</tr>';
+            });
+            document.getElementById('b').innerHTML = html;
+        }
+
+        function addP() { var v=document.getElementById('pI').value; if(v){ P.push({n:v, d:{}}); document.getElementById('pI').value=''; show(); } }
+        function addS() { var v=document.getElementById('sI').value; if(v){ S.push(v); document.getElementById('sI').value=''; show(); } }
+        function addT(pi,si) { 
+            var txt = prompt("گزارش را بنویسید:"); 
+            if(txt){ 
+                if(!P[pi].d[si]) P[pi].d[si]={t:''};
+                var now = new Date();
+                var time = now.getHours()+":"+now.getMinutes();
+                P[pi].d[si].t = time + ": " + txt + "\n" + P[pi].d[si].t;
+                show();
+            }
+        }
+        show();
+    </script>
+</body>
+</html>
