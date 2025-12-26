@@ -6,6 +6,10 @@
     <style>
         body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f9f9f9; }
         .box { background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ddd; }
+        /* استایل لوگو */
+        .header-logo { text-align: center; margin-bottom: 20px; }
+        .header-logo img { width: 150px; height: auto; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
         input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 5px; }
         button { padding: 10px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -24,6 +28,11 @@
 <body>
 
 <div class="box">
+    <div class="header-logo">
+        <img src="https://api.deepai.org/job-view-file/967d32e1-58d3-487e-97f6-62153549298e/outputs/output.jpg" alt="Logo">
+        <h2 style="color: #2c3e50; margin-top: 10px;">سامانه مدیریت کارگاه</h2>
+    </div>
+
     <div style="margin-bottom: 20px;">
         <input type="text" id="p_in" placeholder="نام پروژه جدید">
         <button onclick="addProject()" style="background:#27ae60">+ پروژه</button>
@@ -41,7 +50,7 @@
 
     <div class="backup-section">
         <button onclick="exportData()" style="flex: 1; background:#8e44ad;">💾 دانلود پشتیبان</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#d63031;">📥 بارگذاری فایل (Import)</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#d63031;">📥 بارگذاری فایل</button>
         <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
     </div>
 </div>
@@ -135,7 +144,7 @@
                     prjs = data.prjs;
                     stps = data.stps;
                     refresh();
-                    alert("اطلاعات با موفقیت بازیابی شد.");
+                    alert("اطلاعات بازیابی شد.");
                 }
             } catch (err) { alert("فایل معتبر نیست."); }
         };
