@@ -1,85 +1,132 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مدیریت کارگاه</title>
-<style>
-body{font-family:tahoma;background:#f4f7f6;padding:10px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #333;padding:6px;text-align:center;vertical-align:top}
-th{background:#34495e;color:#fff}
-.done{background:#d4edda}
-textarea{width:95%;height:60px}
-button{margin:2px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
+        .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
+        button { padding: 8px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
+        .btn-p { background: #27ae60; color: white; }
+        .btn-s { background: #2980b9; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: center; vertical-align: top; }
+        th { background: #34495e; color: white; }
+        /* استایل یادداشت‌های جداگانه */
+        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 11px; box-shadow: 1px 1px 3px rgba(0,0,0,0.05); }
+        .date-tag { color: #d35400; font-weight: bold; font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        /* وضعیت‌های اتمام */
+        .done-row { background: #d4edda !important; } 
+        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
+        .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; }
+        .btn-edit { background: #f39c12; color: white; font-size: 10px; width: 100%; margin-top: 5px; }
+    </style>
 </head>
-
 <body>
 
-<h2>مدیریت کارگاه</h2>
+<div class="card">
+    <h3 style="text-align:center;">مدیریت هوشمند کارگاه</h3>
+    <input type="text" id="p_in" placeholder="نام پروژه جدید">
+    <button class="btn-p" onclick="addP()">+ پروژه</button>
+    <br>
+    <input type="text" id="s_in" placeholder="نام مرحله جدید">
+    <button class="btn-s" onclick="addS()">+ مرحله</button>
 
-<input id="p" placeholder="نام پروژه">
-<button onclick="addProject()">+ پروژه</button>
-<br><br>
+    <div style="overflow-x: auto;">
+        <table id="mainTable">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
 
-<input id="s" placeholder="نام مرحله">
-<button onclick="addStep()">+ مرحله</button>
-
-<table>
-<thead id="h"></thead>
-<tbody id="b"></tbody>
-</table>
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white;">💾 دانلود بک‌آپ</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white;">📥 بازیابی فایل</button>
+        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
+    </div>
+</div>
 
 <script>
-var projects=[];
-var steps=[];
+    // نام حافظه جدید برای جلوگیری از تداخل با نسخه‌های قبل
+    var prjs = JSON.parse(localStorage.getItem('K_DATA_NEW_100')) || [];
+    var stps = JSON.parse(localStorage.getItem('S_DATA_NEW_100')) || [];
 
-function render(){
-    let h='<tr><th>پروژه</th>';
-    steps.forEach(s=>h+='<th>'+s+'</th>');
-    h+='</tr>';
-    document.getElementById('h').innerHTML=h;
+    function refresh() {
+        localStorage.setItem('K_DATA_NEW_100', JSON.stringify(prjs));
+        localStorage.setItem('S_DATA_NEW_100', JSON.stringify(stps));
 
-    let b='';
-    projects.forEach((p,pi)=>{
-        b+='<tr class="'+(p.done?'done':'')+'"><td>'+p.name+
-           '<br><button onclick="toggleProject('+pi+')">'+(p.done?'بازگشت':'اتمام پروژه')+'</button></td>';
+        var h = document.getElementById('thead');
+        var hHtml = '<tr><th>اطلاعات پروژه</th>';
+        for(var i=0; i<stps.length; i++) hHtml += '<th>' + stps[i] + ' <button onclick="delS('+i+')" style="background:none;color:red;font-size:8px">حذف</button></th>';
+        h.innerHTML = hHtml + '</tr>';
 
-        steps.forEach((s,si)=>{
-            let c=p.cells[si]||{note:'',done:false};
-            b+='<td class="'+(c.done?'done':'')+'">'+
-               '<textarea oninput="saveNote('+pi+','+si+',this.value)">'+c.note+'</textarea>'+
-               '<br><button onclick="toggleStep('+pi+','+si+')">'+(c.done?'↩':'اتمام مرحله')+'</button></td>';
-        });
-        b+='</tr>';
-    });
-    document.getElementById('b').innerHTML=b;
-}
+        var b = document.getElementById('tbody');
+        var bHtml = '';
+        for(var j=0; j<prjs.length; j++) {
+            var rClass = prjs[j].f ? 'done-row' : '';
+            bHtml += '<tr class="'+rClass+'"><td><b>'+prjs[j].n+'</b>' +
+                     '<button class="btn-edit" onclick="editP('+j+')">ویرایش نام</button>' +
+                     '<button class="btn-finish" onclick="finishP('+j+')">'+(prjs[j].f?'↩ بازگشت':'✓ پایان پروژه')+'</button>' +
+                     '<button class="btn-finish" style="background:#e74c3c" onclick="delP('+j+')">حذف</button></td>';
+            
+            for(var k=0; k<stps.length; k++) {
+                var cell = prjs[j].c[k] || {logs:[], f:false};
+                var cClass = cell.f ? 'done-cell' : '';
+                var logsHtml = '';
+                for(var m=0; m<cell.logs.length; m++) {
+                    logsHtml += '<div class="log-item" onclick="editSingleLog('+j+','+k+','+m+')"><span class="date-tag">'+cell.logs[m].d+'</span>'+cell.logs[m].t+'</div>';
+                }
+                bHtml += '<td class="'+cClass+'">' +
+                         '<div style="min-height:50px" onclick="addLog('+j+','+k+')">' + (logsHtml || '<small style="color:#ccc">کلیک برای یادداشت</small>') + '</div>' +
+                         '<button class="btn-finish" style="background:#2980b9" onclick="finishS('+j+','+k+')">'+(cell.f?'↩':'✅ اتمام مرحله')+'</button></td>';
+            }
+            bHtml += '</tr>';
+        }
+        b.innerHTML = bHtml;
+    }
 
-function addProject(){
-    let v=p.value.trim();
-    if(v){projects.push({name:v,done:false,cells:{}});p.value='';render();}
-}
-function addStep(){
-    let v=s.value.trim();
-    if(v){steps.push(v);s.value='';render();}
-}
-function toggleProject(i){
-    projects[i].done=!projects[i].done;
-    render();
-}
-function toggleStep(pi,si){
-    if(!projects[pi].cells[si]) projects[pi].cells[si]={note:'',done:false};
-    projects[pi].cells[si].done=!projects[pi].cells[si].done;
-    render();
-}
-function saveNote(pi,si,val){
-    if(!projects[pi].cells[si]) projects[pi].cells[si]={note:'',done:false};
-    projects[pi].cells[si].note=val;
-}
-render();
+    function addP() { var v = document.getElementById('p_in').value; if(v.trim()){ prjs.push({n:v, c:{}, f:false}); document.getElementById('p_in').value=""; refresh(); } }
+    function addS() { var v = document.getElementById('s_in').value; if(v.trim()){ stps.push(v); document.getElementById('s_in').value=""; refresh(); } }
+    
+    function finishP(i) { prjs[i].f = !prjs[i].f; refresh(); }
+    function finishS(pi, si) { if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[], f:false}; prjs[pi].c[si].f = !prjs[pi].c[si].f; refresh(); }
+    function editP(i) { var n = prompt("نام جدید پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
+
+    function addLog(pi, si) {
+        var msg = prompt("یادداشت جدید:");
+        if(msg) {
+            var now = new Date();
+            var dStr = now.toLocaleDateString('fa-IR') + " " + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
+            if(!prjs[pi].c[si]) prjs[pi].c[si] = {logs:[], f:false};
+            prjs[pi].c[si].logs.unshift({d: dStr, t: msg});
+            refresh();
+        }
+    }
+
+    function editSingleLog(pi, si, li) {
+        event.stopPropagation();
+        var old = prjs[pi].c[si].logs[li].t;
+        var msg = prompt("ویرایش یادداشت:", old);
+        if(msg === "") { prjs[pi].c[si].logs.splice(li, 1); refresh(); }
+        else if(msg) { prjs[pi].c[si].logs[li].t = msg; refresh(); }
+    }
+
+    function delP(i) { if(confirm("حذف پروژه؟")) { prjs.splice(i, 1); refresh(); } }
+    function delS(i) { if(confirm("حذف مرحله؟")) { stps.splice(i, 1); refresh(); } }
+
+    function exportData() {
+        var blob = new Blob([JSON.stringify({p:prjs, s:stps})], {type:'application/json'});
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "kargah_backup.json"; a.click();
+    }
+
+    function importData(e) {
+        var reader = new FileReader();
+        reader.onload = function(ev) { try { var d = JSON.parse(ev.target.result); prjs = d.p; stps = d.s; refresh(); alert("بازیابی شد"); } catch(e){alert("فایل نامعتبر")} };
+        reader.readAsText(e.target.files[0]);
+    }
+
+    refresh();
 </script>
-
 </body>
 </html>
