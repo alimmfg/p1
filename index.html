@@ -4,50 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma; padding: 10px; background: #eee; }
-        .box { background: #fff; padding: 15px; border-radius: 10px; }
-        input { padding: 8px; width: 60%; margin: 5px 0; border: 1px solid #ccc; }
-        button { padding: 8px 12px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; background: #222; color: #fff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #000; padding: 10px; text-align: center; font-size: 13px; }
-        .p-done { background: #c8e6c9; } /* سبز برای پروژه تمام شده */
+        body { font-family: Tahoma; padding: 10px; direction: rtl; background: #eee; }
+        .card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px #ccc; }
+        input { width: 60%; padding: 8px; margin: 5px 0; }
+        button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 13px; }
+        .p-done { background: #c8e6c9 !important; }
+        .s-done { background: #e3f2fd; border: 2px solid blue !important; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <input type="text" id="p_name" placeholder="نام پروژه">
-    <button onclick="addP()" style="background:green">+ پروژه</button>
+<div class="card">
+    <input type="text" id="pi" placeholder="نام پروژه">
+    <button onclick="addP()" style="background:green; color:#fff">+ پروژه</button>
     <br>
-    <input type="text" id="s_name" placeholder="نام مرحله">
-    <button onclick="addS()" style="background:blue">+ مرحله</button>
+    <input type="text" id="si" placeholder="نام مرحله">
+    <button onclick="addS()" style="background:blue; color:#fff">+ مرحله</button>
 
     <div style="overflow-x: auto;">
         <table id="tbl">
-            <thead id="h_row"></thead>
-            <tbody id="b_rows"></tbody>
+            <thead id="h"></thead>
+            <tbody id="b"></tbody>
         </table>
     </div>
-
-    <button onclick="saveFile()" style="width:100%; margin-top:20px; background:purple">💾 دانلود پشتیبان</button>
+    <br>
+    <button onclick="save()" style="width:100%; background:#6a1b9a; color:#fff">💾 دانلود پشتیبان</button>
 </div>
 
 <script>
-    // استفاده از نام‌های کاملا جدید برای دیتابیس که با قبلی‌ها قاطی نشود
-    var LIST_S = JSON.parse(localStorage.getItem('L_S_1')) || [];
-    var LIST_P = JSON.parse(localStorage.getItem('L_P_1')) || [];
+    // استفاده از اسامی جدید برای جلوگیری از تداخل
+    var S = JSON.parse(localStorage.getItem('steps_fix')) || [];
+    var P = JSON.parse(localStorage.getItem('projs_fix')) || [];
 
     function render() {
-        localStorage.setItem('L_S_1', JSON.stringify(LIST_S));
-        localStorage.setItem('L_P_1', JSON.stringify(LIST_P));
+        localStorage.setItem('steps_fix', JSON.stringify(S));
+        localStorage.setItem('projs_fix', JSON.stringify(P));
         
-        // رندر سرتیتر (مراحل)
-        var h = document.getElementById('h_row');
-        h.innerHTML = '<tr><th>پروژه</th>' + LIST_S.map((s, i) => '<th>'+s+'<br><span onclick="delS('+i+')" style="color:red;font-size:10px">[حذف]</span></th>').join('') + '</tr>';
+        var h = document.getElementById('h');
+        var headHtml = '<tr><th>نام پروژه</th>';
+        for(var i=0; i<S.length; i++) {
+            headHtml += '<th>' + S[i] + ' <span onclick="delS('+i+')" style="color:red; font-size:10px">[حذف]</span></th>';
+        }
+        h.innerHTML = headHtml + '</tr>';
 
-        // رندر ردیف‌ها (پروژه‌ها)
-        var b = document.getElementById('b_rows');
-        b.innerHTML = '';
-        LIST_P.forEach((p, pi) => {
-            var row = '<tr class="' + (p.f ? 'p-done' : '') + '">';
-            row += '<td onclick="tgP('+pi+')"><b>' + p.n + '</b>
+        var b = document.getElementById('b');
+        var bodyHtml = '';
+        for(var j=0; j<P.length; j++) {
+            var rowClass = P[j].f ? 'p-done' : '';
+            bodyHtml += '<tr class="'+rowClass+'">';
+            bodyHtml += '<td onclick="tgP('+j+')"><b>'+P[j].n+'</b><br><small>'+(P[j].f?'تمام':'جاری')+'</small></td>';
+            for(var k=0; k<S.length; k++) {
+                var d = P[j].d[k] || {t:'', f:false};
+                var cellClass = d.f ? 's-done' : '';
+                bodyHtml += '<td class="'+cellClass+'" onclick="ed('+j+','+k+')">'+ (d.f?'✅ ':'') + d.t +'</td>';
+            }
+            bodyHtml += '</tr>';
+        }
+        b.innerHTML = bodyHtml;
+    }
+
+    function addP() {
+        var v = document.getElementById('pi').value;
+        if(v) { P.push({n:v, d:{}, f:false}); document.getElementById('pi').value=''; render(); }
+    }
+
+    function addS() {
+        var v = document.getElementById('si').value;
+        if(v) { S.push(v); document.getElementById('si').value=''; render(); }
+    }
+
+    function delS(i) { if(confirm('حذف؟')) { S.splice(i,1); render(); } }
+    
+    function tgP(i) { if(confirm('اتمام پروژه؟')) { P[i].f = !P[i].f; render(); } }
+
+    function ed(pi, si) {
+        if(!P[pi].d[si]) P[pi].d[si] = {t:'', f:false};
+        var res = prompt("1. متن گزارش\n2. برای تیک سبز بنویس: ok\n3. برای پاک کردن بنویس: clear", P[pi].d[si].t);
+        if(res !== null) {
+            if(res.toLowerCase() == 'ok') {
+                P[pi].d[si].f = !P[pi].d[si].f;
+            } else if(res.toLowerCase() == 'clear') {
+                P[pi].d[si] = {t:'', f:false};
+            } else {
+                var now = new Date();
+                var time = now.getHours() + ":" + now.getMinutes();
+                P[pi].d[si].t = time + " - " + res + "<br>" + P[pi].d[si].t;
+            }
+            render();
+        }
+    }
+
+    function save() {
+        var a = document.createElement("a");
+        var file = new Blob([JSON.stringify({S,P})], {type: 'application/json'});
+        a.href = URL.createObjectURL(file);
+        a.download = "backup.json"; a.click();
+    }
+
+    render();
+</script>
+</body>
+</html>
