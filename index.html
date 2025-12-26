@@ -6,9 +6,11 @@
     <style>
         body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f9f9f9; }
         .box { background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ddd; }
+        .header-logo { text-align: center; margin-bottom: 20px; }
+        .header-logo img { width: 120px; height: auto; border-radius: 15px; }
         input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 5px; }
         button { padding: 10px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
         th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
         th { background: #34495e; color: white; font-size: 13px; }
         .p-name { cursor: pointer; color: #2c3e50; font-weight: bold; display: block; margin-bottom: 5px; }
@@ -22,6 +24,10 @@
 <body>
 
 <div class="box">
+    <div class="header-logo">
+        <h2 style="color: #2c3e50;">مدیریت هوشمند کارگاه</h2>
+    </div>
+
     <div style="margin-bottom: 20px;">
         <input type="text" id="p_in" placeholder="نام پروژه جدید">
         <button onclick="addProject()" style="background:#27ae60">+ پروژه</button>
@@ -31,7 +37,7 @@
     </div>
 
     <div style="overflow-x: auto;">
-        <table id="myTable">
+        <table>
             <thead id="h_t"></thead>
             <tbody id="b_t"></tbody>
         </table>
@@ -45,13 +51,12 @@
 </div>
 
 <script>
-    // استفاده از حافظه نسخه 5 برای جلوگیری از تداخل
-    var prjs = JSON.parse(localStorage.getItem('P_DATA_V5')) || [];
-    var stps = JSON.parse(localStorage.getItem('S_DATA_V5')) || [];
+    var prjs = JSON.parse(localStorage.getItem('P_DATA_V6')) || [];
+    var stps = JSON.parse(localStorage.getItem('S_DATA_V6')) || [];
 
     function refresh() {
-        localStorage.setItem('P_DATA_V5', JSON.stringify(prjs));
-        localStorage.setItem('S_DATA_V5', JSON.stringify(stps));
+        localStorage.setItem('P_DATA_V6', JSON.stringify(prjs));
+        localStorage.setItem('S_DATA_V6', JSON.stringify(stps));
 
         var h = document.getElementById('h_t');
         var headHtml = '<tr><th>پروژه</th>';
@@ -64,17 +69,10 @@
         var bodyHtml = '';
         for(var j=0; j<prjs.length; j++) {
             var p = prjs[j];
-            bodyHtml += '<tr class="'+(p.f?'done-p':'')+'">';
-            bodyHtml += '<td><span class="p-name" onclick="editP('+j+')">'+p.n+'</span>' +
-                       '<button onclick="toggleP('+j+')" class="btn-tiny" style="background:#636e72">'+(p.f?'بازگشت':'اتمام کل')+'</button></td>';
-            
+            bodyHtml += '<tr class="'+(p.f?'done-p':'')+'"><td><span class="p-name" onclick="editP('+j+')">'+p.n+'</span><button onclick="toggleP('+j+')" class="btn-tiny" style="background:#636e72">'+(p.f?'بازگشت':'اتمام کل')+'</button></td>';
             for(var k=0; k<stps.length; k++) {
                 var d = p.d[k] || {t:'', f:false};
-                var cellClass = d.f ? 'done-s' : '';
-                bodyHtml += '<td class="'+cellClass+'" onclick="editCell('+j+','+k+')">' +
-                           '<div class="log-text">' + (d.t || '---') + '</div>' +
-                           '<div style="margin-top:5px"><button onclick="event.stopPropagation(); toggleStep('+j+','+k+')" class="btn-tiny" style="background:#0984e3">'+(d.f?'↩':'✅ اتمام')+'</button></div>' +
-                           '</td>';
+                bodyHtml += '<td class="'+(d.f?'done-s':'')+'" onclick="editCell('+j+','+k+')"><div class="log-text">'+(d.t || '---')+'</div><button onclick="event.stopPropagation(); toggleStep('+j+','+k+')" class="btn-tiny" style="background:#0984e3">'+(d.f?'↩':'✅ اتمام')+'</button></td>';
             }
             bodyHtml += '</tr>';
         }
@@ -83,25 +81,17 @@
 
     function addProject() {
         var v = document.getElementById('p_in').value;
-        if(v) {
-            prjs.push({n:v, d:{}, f:false});
-            document.getElementById('p_in').value='';
-            refresh();
-        }
+        if(v) { prjs.push({n:v, d:{}, f:false}); document.getElementById('p_in').value=''; refresh(); }
     }
 
     function addStep() {
         var v = document.getElementById('s_in').value;
-        if(v) {
-            stps.push(v);
-            document.getElementById('s_in').value='';
-            refresh();
-        }
+        if(v) { stps.push(v); document.getElementById('s_in').value=''; refresh(); }
     }
 
     function editCell(pi, si) {
         if(!prjs[pi].d[si]) prjs[pi].d[si] = {t:'', f:false};
-        var txt = prompt("گزارش جدید را بنویسید:");
+        var txt = prompt("گزارش جدید:");
         if(txt) {
             var now = new Date();
             var time = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
@@ -118,29 +108,5 @@
         refresh();
     }
 
-    function editP(i) { var n = prompt("نام جدید پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
-    function editS(i) { var n = prompt("نام جدید مرحله:", stps[i]); if(n) { stps[i] = n; refresh(); } }
-    function toggleP(i) { prjs[i].f = !prjs[i].f; refresh(); }
-    function delS(i) { if(confirm('حذف مرحله؟')) { stps.splice(i,1); refresh(); } }
-
-    function exportData() {
-        var blob = new Blob([JSON.stringify({prjs, stps})], {type: 'application/json'});
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "workshop_backup.json"; a.click();
-    }
-
-    function importData(event) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var data = JSON.parse(e.target.result);
-            prjs = data.prjs; stps = data.stps; refresh();
-            alert("بازیابی شد.");
-        };
-        reader.readAsText(event.target.files[0]);
-    }
-
-    refresh();
-</script>
-</body>
-</html>
+    function editP(i) { var n = prompt("نام جدید:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
+    function editS(i) { var n = prompt("نام جدید:", stps[i]); if(n) { stps[i] = n; refresh(); } }
