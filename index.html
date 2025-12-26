@@ -2,58 +2,110 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت کارگاه</title>
     <style>
-        body { font-family: Tahoma; padding: 10px; direction: rtl; background: #f0f2f5; }
-        .box { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 20px; color: #1a73e8; }
-        input { padding: 12px; width: 65%; border: 2px solid #dfe1e5; border-radius: 8px; font-size: 14px; }
-        button { padding: 10px 15px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: #fff; margin: 2px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: center; vertical-align: top; }
-        th { background: #34495e; color: white; }
-        .done-p { background: #d4edda !important; }
-        .done-s { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
-        .date-label { color: #d35400; font-weight: bold; font-size: 10px; display: block; margin-bottom: 4px; border-bottom: 1px solid #eee; }
-        .log-text { text-align: right; font-size: 12px; white-space: pre-wrap; cursor: pointer; min-height: 30px; }
-        .btn-tiny { font-size: 10px; padding: 5px; margin-top: 5px; width: 100%; }
+        body { font-family: Tahoma; direction: rtl; padding: 20px; background: #f0f0f0; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; width: 200px; margin-bottom: 10px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #000; padding: 10px; text-align: center; }
+        th { background: #333; color: white; }
+        .log { text-align: right; font-size: 12px; white-space: pre-wrap; }
+        .date { color: orange; font-weight: bold; display: block; font-size: 10px; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <div class="header"><h2>🛠 مدیریت کارگاه</h2></div>
+<div class="card">
+    <h2>مدیریت کارگاه (نسخه نهایی و قطعی)</h2>
+    
+    <input type="text" id="p_name" placeholder="نام پروژه">
+    <button onclick="newP()">+ اضافه کردن پروژه</button>
+    <br>
+    <input type="text" id="s_name" placeholder="نام مرحله">
+    <button onclick="newS()" style="background: #007bff">+ اضافه کردن مرحله</button>
 
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-        <input type="text" id="p_in" placeholder="نام پروژه (مثل: تابلو برق فلان)">
-        <button onclick="addProject()" style="background:#28a745">+ افزودن پروژه</button>
-        <br><br>
-        <input type="text" id="s_in" placeholder="نام مرحله (مثل: سیم‌کشی)">
-        <button onclick="addStep()" style="background:#007bff">+ افزودن مرحله</button>
-    </div>
-
-    <div style="overflow-x: auto;">
-        <table id="mainTable">
-            <thead id="h_t"></thead>
-            <tbody id="b_t"></tbody>
-        </table>
-    </div>
-
-    <div style="margin-top: 25px; display: flex; gap: 10px;">
-        <button onclick="exportData()" style="flex: 1; background:#6f42c1;">💾 ذخیره فایل پشتیبان</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#dc3545;">📥 بازگرداندن اطلاعات</button>
-        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
-    </div>
+    <table id="tbl">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+    </table>
+    
+    <br>
+    <button onclick="saveFile()" style="background: #6f42c1;">💾 دانلود نسخه پشتیبان</button>
 </div>
 
 <script>
-    // استفاده از اسم جدید برای حافظه جهت رفع تداخل
-    var projects = JSON.parse(localStorage.getItem('WORKSHOP_FINAL_DATA')) || [];
-    var steps = JSON.parse(localStorage.getItem('WORKSHOP_STEPS')) || [];
+    // استفاده از یک اسم کاملاً جدید برای حافظه که با قبلی‌ها قاطی نشود
+    var LIST_P = JSON.parse(localStorage.getItem('WORKSHOP_VER_10')) || [];
+    var LIST_S = JSON.parse(localStorage.getItem('WORKSHOP_STEPS_10')) || [];
 
-    function refresh() {
-        localStorage.setItem('WORKSHOP_FINAL_DATA', JSON.stringify(projects));
-        localStorage.setItem('WORKSHOP_STEPS', JSON.stringify(steps));
+    function show() {
+        localStorage.setItem('WORKSHOP_VER_10', JSON.stringify(LIST_P));
+        localStorage.setItem('WORKSHOP_STEPS_10', JSON.stringify(LIST_S));
 
-        // رندر سر
+        // هد جدول
+        var h = document.getElementById('thead');
+        var txtH = '<tr><th>نام پروژه</th>';
+        for(var i=0; i<LIST_S.length; i++) {
+            txtH += '<th>' + LIST_S[i] + '</th>';
+        }
+        h.innerHTML = txtH + '</tr>';
+
+        // بدنه جدول
+        var b = document.getElementById('tbody');
+        var txtB = '';
+        for(var j=0; j<LIST_P.length; j++) {
+            txtB += '<tr><td><b>' + LIST_P[j].name + '</b></td>';
+            for(var k=0; k<LIST_S.length; k++) {
+                var data = LIST_P[j].cells[k] || '';
+                txtB += '<td onclick="addLog('+j+','+k+')"><div class="log">' + data + '</div></td>';
+            }
+            txtB += '</tr>';
+        }
+        b.innerHTML = txtB;
+    }
+
+    function newP() {
+        var val = document.getElementById('p_name').value;
+        if(val) {
+            LIST_P.push({name: val, cells: {}});
+            document.getElementById('p_name').value = '';
+            show();
+        }
+    }
+
+    function newS() {
+        var val = document.getElementById('s_name').value;
+        if(val) {
+            LIST_S.push(val);
+            document.getElementById('s_name').value = '';
+            show();
+        }
+    }
+
+    function addLog(pIdx, sIdx) {
+        var msg = prompt("گزارش جدید را بنویسید:");
+        if(msg) {
+            var date = new Date().toLocaleDateString('fa-IR');
+            var time = new Date().getHours() + ":" + new Date().getMinutes();
+            var entry = '<span class="date">' + date + ' ' + time + '</span>' + msg + '<br>';
+            
+            if(!LIST_P[pIdx].cells[sIdx]) LIST_P[pIdx].cells[sIdx] = '';
+            LIST_P[pIdx].cells[sIdx] = entry + LIST_P[pIdx].cells[sIdx];
+            show();
+        }
+    }
+
+    function saveFile() {
+        var a = document.createElement('a');
+        var data = JSON.stringify({LIST_P, LIST_S});
+        a.href = URL.createObjectURL(new Blob([data], {type: 'application/json'}));
+        a.download = "backup.json";
+        a.click();
+    }
+
+    show();
+</script>
+
+</body>
+</html>
