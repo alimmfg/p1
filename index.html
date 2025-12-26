@@ -8,16 +8,20 @@
         .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .header { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; margin-bottom: 15px; padding-bottom: 10px; }
         input { padding: 12px; width: 65%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
-        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 2px; transition: 0.3s; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
         .btn-p { background: #27ae60; color: white; }
         .btn-s { background: #2980b9; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #333; padding: 10px; text-align: center; vertical-align: top; }
         th { background: #34495e; color: white; }
-        .log-box { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.6; min-height: 50px; cursor: pointer; background: #fffdf0; padding: 5px; }
+        .log-box { text-align: right; font-size: 11px; white-space: pre-wrap; line-height: 1.6; min-height: 50px; cursor: pointer; padding: 5px; }
         .date-tag { color: #d35400; font-weight: bold; font-size: 10px; display: block; background: #eee; padding: 2px; margin-bottom: 4px; }
         .controls { margin-top: 20px; display: flex; gap: 10px; }
         .edit-btn { font-size: 10px; background: #f39c12; color: white; padding: 4px; margin-top: 5px; width: 100%; }
+        /* استایل‌های اتمام */
+        .done-row { background: #d4edda !important; } /* سبز برای پروژه تمام شده */
+        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; } /* آبی برای مرحله تمام شده */
+        .finish-btn { font-size: 9px; background: #34495e; color: white; padding: 3px; margin-top: 3px; width: 100%; }
     </style>
 </head>
 <body>
@@ -25,14 +29,14 @@
 <div class="card">
     <div class="header"><h2>📋 مدیریت هوشمند کارگاه</h2></div>
     
-    <input type="text" id="p_in" placeholder="نام پروژه (مثلاً: پروژه فولاد)">
+    <input type="text" id="p_in" placeholder="نام پروژه">
     <button class="btn-p" onclick="addP()">+ پروژه جدید</button>
     <br>
-    <input type="text" id="s_in" placeholder="نام مرحله (مثلاً: جوشکاری)">
+    <input type="text" id="s_in" placeholder="نام مرحله">
     <button class="btn-s" onclick="addS()">+ مرحله جدید</button>
 
     <div style="overflow-x: auto;">
-        <table id="mainTable">
+        <table>
             <thead id="thead"></thead>
             <tbody id="tbody"></tbody>
         </table>
@@ -40,19 +44,18 @@
 
     <div class="controls">
         <button onclick="exportData()" style="flex: 1; background:#8e44ad; color:white;">💾 دانلود فایل پشتیبان</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#c0392b; color:white;">📥 بارگذاری فایل (بازیابی)</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#c0392b; color:white;">📥 بارگذاری فایل</button>
         <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
     </div>
 </div>
 
 <script>
-    // حافظه جدید برای جلوگیری از تداخل
-    var prjs = JSON.parse(localStorage.getItem('WORKSHOP_V20_DATA')) || [];
-    var stps = JSON.parse(localStorage.getItem('WORKSHOP_V20_STEPS')) || [];
+    var prjs = JSON.parse(localStorage.getItem('WORKSHOP_ULTRA_V3')) || [];
+    var stps = JSON.parse(localStorage.getItem('STEPS_ULTRA_V3')) || [];
 
     function refresh() {
-        localStorage.setItem('WORKSHOP_V20_DATA', JSON.stringify(prjs));
-        localStorage.setItem('WORKSHOP_V20_STEPS', JSON.stringify(stps));
+        localStorage.setItem('WORKSHOP_ULTRA_V3', JSON.stringify(prjs));
+        localStorage.setItem('STEPS_ULTRA_V3', JSON.stringify(stps));
 
         var h = document.getElementById('thead');
         var hHtml = '<tr><th>اطلاعات پروژه</th>';
@@ -64,76 +67,15 @@
         var b = document.getElementById('tbody');
         var bHtml = '';
         for(var j=0; j<prjs.length; j++) {
-            bHtml += '<tr>';
-            bHtml += '<td><b style="font-size:14px">' + prjs[j].n + '</b><button class="edit-btn" onclick="editPName('+j+')">ویرایش نام</button><button class="edit-btn" style="background:#e74c3c" onclick="delP('+j+')">حذف پروژه</button></td>';
+            var rowClass = prjs[j].f ? 'done-row' : '';
+            bHtml += '<tr class="'+rowClass+'">';
+            bHtml += '<td><b>' + prjs[j].n + '</b>' +
+                     '<button class="edit-btn" onclick="editPName('+j+')">ویرایش نام</button>' +
+                     '<button class="finish-btn" onclick="togglePFinish('+j+')">' + (prjs[j].f ? 'بازگشت' : '✓ پایان پروژه') + '</button>' +
+                     '<button class="edit-btn" style="background:#e74c3c" onclick="delP('+j+')">حذف</button></td>';
+            
             for(var k=0; k<stps.length; k++) {
-                var content = prjs[j].c[k] || "بدون یادداشت";
-                bHtml += '<td><div class="log-box" onclick="editLog('+j+','+k+')">' + content + '</div></td>';
-            }
-            bHtml += '</tr>';
-        }
-        b.innerHTML = bHtml;
-    }
-
-    function addP() {
-        var v = document.getElementById('p_in').value;
-        if(v.trim()) { prjs.push({ n: v, c: {} }); document.getElementById('p_in').value = ""; refresh(); }
-    }
-
-    function addS() {
-        var v = document.getElementById('s_in').value;
-        if(v.trim()) { stps.push(v); document.getElementById('s_in').value = ""; refresh(); }
-    }
-
-    function editPName(i) {
-        var n = prompt("ویرایش نام پروژه:", prjs[i].n);
-        if(n) { prjs[i].n = n; refresh(); }
-    }
-
-    function editLog(pIdx, sIdx) {
-        // برای ادیت، محتوای فعلی را در Prompt می‌آوریم (تگ‌های HTML حذف می‌شوند برای ویرایش راحت‌تر)
-        var current = prjs[pIdx].c[sIdx] || "";
-        var cleanText = current.replace(/<[^>]*>/g, "\n").replace(/\n\n/g, "\n").trim();
-        
-        var msg = prompt("یادداشت جدید را بنویسید یا قبلی را ویرایش کنید:\n(خالی بگذارید تا پاک شود)", cleanText);
-        
-        if(msg !== null) {
-            if(msg.trim() === "") {
-                prjs[pIdx].c[sIdx] = "";
-            } else {
-                var now = new Date();
-                var d = now.toLocaleDateString('fa-IR') + " " + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
-                var entry = '<span class="date-tag">' + d + '</span>' + msg.replace(/\n/g, "<br>") + '<hr>';
-                
-                // اگر می‌خواهید یادداشت قبلی بماند و جدید به آن اضافه شود:
-                prjs[pIdx].c[sIdx] = entry + (prjs[pIdx].c[sIdx] || "");
-            }
-            refresh();
-        }
-    }
-
-    function delP(i) { if(confirm("پروژه حذف شود؟")) { prjs.splice(i, 1); refresh(); } }
-    function delS(i) { if(confirm("مرحله حذف شود؟")) { stps.splice(i, 1); refresh(); refresh(); } }
-
-    function exportData() {
-        var data = JSON.stringify({ p: prjs, s: stps });
-        var blob = new Blob([data], { type: 'application/json' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "workshop_backup.json";
-        a.click();
-    }
-
-    function importData(event) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var data = JSON.parse(e.target.result);
-            if(data.p && data.s) { prjs = data.p; stps = data.s; refresh(); alert("بازیابی شد."); }
-        };
-        reader.readAsText(event.target.files[0]);
-    }
-
-    refresh();
-</script>
-</body>
-</html>
+                var cellData = prjs[j].c[k] || {t:'', f:false};
+                var cellClass = cellData.f ? 'done-cell' : '';
+                bHtml += '<td class="'+cellClass+'">' +
+                         '<div class="log-box" onclick="editLog('+j+','+k+')">' + (cellData.t || "
