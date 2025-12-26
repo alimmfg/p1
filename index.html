@@ -4,69 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma; padding: 10px; direction: rtl; background: #eee; }
-        .card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px #ccc; }
-        input { width: 60%; padding: 8px; margin: 5px 0; }
-        button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        body { font-family: Tahoma; padding: 10px; background: #f0f0f0; direction: rtl; }
+        .box { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px #bbb; }
+        .inputs { margin-bottom: 15px; }
+        input { padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 5px; margin: 5px 0; }
+        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
-        th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 13px; }
-        th { background: #444; color: #fff; position: relative; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: center; font-size: 13px; }
+        th { background: #34495e; color: #fff; }
         .p-done { background: #c8e6c9 !important; }
-        .s-done { background: #e3f2fd; border: 2px solid blue !important; }
-        .edit-hint { font-size: 9px; display: block; color: #ffeb3b; cursor: pointer; }
+        .s-done { background: #e3f2fd; border: 2px solid #2196f3 !important; }
+        .edit-btn { font-size: 10px; color: #ffeb3b; display: block; cursor: pointer; margin-top: 5px; }
+        .del-btn { font-size: 10px; color: #ff5252; display: block; cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <input type="text" id="pi" placeholder="نام پروژه جدید">
-    <button onclick="addP()" style="background:green; color:#fff">+ پروژه</button>
-    <br>
-    <input type="text" id="si" placeholder="نام مرحله جدید">
-    <button onclick="addS()" style="background:blue; color:#fff">+ مرحله</button>
+<div class="box">
+    <div class="inputs">
+        <input type="text" id="p_input" placeholder="نام پروژه جدید">
+        <button onclick="addNewP()" style="background:#27ae60; color:#fff">+ پروژه</button>
+        <br>
+        <input type="text" id="s_input" placeholder="نام مرحله جدید">
+        <button onclick="addNewS()" style="background:#2980b9; color:#fff">+ مرحله</button>
+    </div>
 
     <div style="overflow-x: auto;">
-        <table id="tbl">
-            <thead id="h"></thead>
-            <tbody id="b"></tbody>
+        <table>
+            <thead id="h_table"></thead>
+            <tbody id="b_table"></tbody>
         </table>
     </div>
-    <br>
-    <button onclick="save()" style="width:100%; background:#6a1b9a; color:#fff">💾 دانلود پشتیبان</button>
+    
+    <button onclick="downloadJSON()" style="width:100%; margin-top:20px; background:#8e44ad; color:#fff; padding:12px;">💾 ذخیره فایل پشتیبان</button>
 </div>
 
 <script>
-    var S = JSON.parse(localStorage.getItem('steps_v16')) || [];
-    var P = JSON.parse(localStorage.getItem('projs_v16')) || [];
+    // استفاده از کلید کاملاً جدید برای رفع مشکل اضافه نشدن
+    var KEY_S = "FINAL_STEPS_V20";
+    var KEY_P = "FINAL_PROJS_V20";
 
-    function render() {
-        localStorage.setItem('steps_v16', JSON.stringify(S));
-        localStorage.setItem('projs_v16', JSON.stringify(P));
-        
-        var h = document.getElementById('h');
-        var headHtml = '<tr><th>پروژه <br><small>(برای ادیت کلیک کنید)</small></th>';
-        for(var i=0; i<S.length; i++) {
-            headHtml += '<th><span onclick="editSName('+i+')">' + S[i] + '</span><br>' +
-                        '<small onclick="delS('+i+')" style="color:red; cursor:pointer;">[حذف]</small></th>';
+    var steps = JSON.parse(localStorage.getItem(KEY_S)) || [];
+    var projs = JSON.parse(localStorage.getItem(KEY_P)) || [];
+
+    function sync() {
+        localStorage.setItem(KEY_S, JSON.stringify(steps));
+        localStorage.setItem(KEY_P, JSON.stringify(projs));
+
+        // رندر سرتیترها (مراحل)
+        var h = document.getElementById('h_table');
+        var hHtml = '<tr><th>پروژه</th>';
+        for(var i=0; i<steps.length; i++) {
+            hHtml += '<th>' + 
+                     '<span onclick="renameS('+i+')">' + steps[i] + '</span>' +
+                     '<small class="del-btn" onclick="delS('+i+')">حذف</small></th>';
         }
-        h.innerHTML = headHtml + '</tr>';
+        h.innerHTML = hHtml + '</tr>';
 
-        var b = document.getElementById('b');
-        var bodyHtml = '';
-        for(var j=0; j<P.length; j++) {
-            var rowClass = P[j].f ? 'p-done' : '';
-            bodyHtml += '<tr class="'+rowClass+'">';
-            bodyHtml += '<td><b onclick="editPName('+j+')">'+P[j].n+'</b><br>' +
-                        '<small onclick="tgP('+j+')" style="color:blue; cursor:pointer;">'+(P[j].f?'[بازگشت]':'[اتمام]')+'</small> ' +
-                        '<small onclick="delP('+j+')" style="color:red; cursor:pointer;">[حذف]</small></td>';
-            for(var k=0; k<S.length; k++) {
-                var d = P[j].d[k] || {t:'', f:false};
-                var cellClass = d.f ? 's-done' : '';
-                bodyHtml += '<td class="'+cellClass+'" onclick="ed('+j+','+k+')">'+ (d.f?'✅ ':'') + d.t +'</td>';
-            }
-            bodyHtml += '</tr>';
-        }
-        b.innerHTML = bodyHtml;
-    }
-
-    function addP() { var v = document.getElementById('pi').value; if(v) { P.push({n:v, d:{}, f:false}); document.getElementById('pi').value='';
+        // رندر بدنه (پروژه‌ها)
+        var b = document.getElementById('b_table');
+        var bHtml = '';
+        for(var j=0; j<projs.length; j++) {
+            var p = projs[j];
