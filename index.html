@@ -13,11 +13,12 @@
         th { background: #34495e; color: white; }
         .p-name { cursor: pointer; color: #2c3e50; font-weight: bold; display: block; margin-bottom: 5px; }
         .s-name { cursor: pointer; color: #fff; }
-        .done-p { background: #d4edda !important; } /* سبز برای کل پروژه */
-        .done-s { background: #e3f2fd !important; border: 2px solid #2196f3 !important; } /* آبی برای اتمام مرحله */
-        .log-text { text-align: right; font-size: 12px; white-space: pre-wrap; line-height: 1.6; }
+        .done-p { background: #d4edda !important; } 
+        .done-s { background: #e3f2fd !important; border: 2px solid #2196f3 !important; } 
+        .log-text { text-align: right; font-size: 12px; white-space: pre-wrap; line-height: 1.6; min-height: 20px; }
         .cell-btns { margin-top: 8px; display: flex; gap: 5px; justify-content: center; }
         .btn-tiny { font-size: 9px; padding: 4px 6px; color: #fff; border-radius: 4px; }
+        .backup-section { margin-top: 20px; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
@@ -38,7 +39,11 @@
         </table>
     </div>
 
-    <button onclick="exportData()" style="width:100%; margin-top:20px; background:#8e44ad; padding:15px;">💾 دانلود فایل پشتیبان</button>
+    <div class="backup-section">
+        <button onclick="exportData()" style="flex: 1; background:#8e44ad;">💾 دانلود پشتیبان</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex: 1; background:#d63031;">📥 بارگذاری فایل (Import)</button>
+        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
+    </div>
 </div>
 
 <script>
@@ -93,13 +98,12 @@
 
     function editCell(pi, si) {
         if(!prjs[pi].d[si]) prjs[pi].d[si] = {t:'', f:false};
-        var oldTxt = prjs[pi].d[si].t.replace(/<br>/g, '\n');
-        var txt = prompt("یادداشت جدید (اینتر بزنید اعمال می‌شود):", "");
+        var txt = prompt("یادداشت جدید:");
         if(txt) {
             var now = new Date();
             var time = "[" + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes() + "]";
-            var newEntry = time + " " + txt.replace(/\n/g, '<br>');
-            prjs[pi].d[si].t = newEntry + "<br>" + prjs[pi].d[si].t;
+            var newEntry = time + " " + txt;
+            prjs[pi].d[si].t = newEntry + "\n" + prjs[pi].d[si].t;
             refresh();
         }
     }
@@ -118,6 +122,24 @@
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = "workshop_backup.json"; a.click();
+    }
+
+    function importData(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var data = JSON.parse(e.target.result);
+                if (data.prjs && data.stps) {
+                    prjs = data.prjs;
+                    stps = data.stps;
+                    refresh();
+                    alert("اطلاعات با موفقیت بازیابی شد.");
+                }
+            } catch (err) { alert("فایل معتبر نیست."); }
+        };
+        reader.readAsText(file);
     }
 
     refresh();
