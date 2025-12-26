@@ -3,39 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>مدیریت کارگاه</title>
 <style>
-body{
-    font-family:Tahoma,sans-serif;
-    background:#f4f7f6;
-    padding:10px;
-}
-.card{
-    background:#fff;
-    padding:15px;
-    border-radius:12px;
-    border:1px solid #ddd;
-    box-shadow:0 4px 8px rgba(0,0,0,.1);
-}
-input{
-    padding:10px;
-    width:60%;
-    border-radius:8px;
-    border:1px solid #ccc;
-    margin-bottom:8px;
-}
-button{
-    padding:7px 10px;
-    border:none;
-    border-radius:6px;
-    font-weight:bold;
-    cursor:pointer;
-    margin:2px;
-}
-.btn-p{background:#27ae60;color:#fff}
-.btn-s{background:#2980b9;color:#fff}
-.btn-edit{background:#f39c12;color:#fff;font-size:11px;width:100%}
-.btn-finish{background:#576574;color:#fff;font-size:11px;width:100%;margin-top:4px}
+body{font-family:tahoma;background:#f4f7f6;padding:10px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #333;padding:6px;text-align:center;vertical-align:top}
+th{background:#34495e;color:#fff}
+.done{background:#d4edda}
+textarea{width:95%;height:60px}
+button{margin:2px}
+</style>
+</head>
 
-table{
-    width
+<body>
+
+<h2>مدیریت کارگاه</h2>
+
+<input id="p" placeholder="نام پروژه">
+<button onclick="addProject()">+ پروژه</button>
+<br><br>
+
+<input id="s" placeholder="نام مرحله">
+<button onclick="addStep()">+ مرحله</button>
+
+<table>
+<thead id="h"></thead>
+<tbody id="b"></tbody>
+</table>
+
+<script>
+var projects=[];
+var steps=[];
+
+function render(){
+    let h='<tr><th>پروژه</th>';
+    steps.forEach(s=>h+='<th>'+s+'</th>');
+    h+='</tr>';
+    document.getElementById('h').innerHTML=h;
+
+    let b='';
+    projects.forEach((p,pi)=>{
+        b+='<tr class="'+(p.done?'done':'')+'"><td>'+p.name+
+           '<br><button onclick="toggleProject('+pi+')">'+(p.done?'بازگشت':'اتمام پروژه')+'</button></td>';
+
+        steps.forEach((s,si)=>{
+            let c=p.cells[si]||{note:'',done:false};
+            b+='<td class="'+(c.done?'done':'')+'">'+
+               '<textarea oninput="saveNote('+pi+','+si+',this.value)">'+c.note+'</textarea>'+
+               '<br><button onclick="toggleStep('+pi+','+si+')">'+(c.done?'↩':'اتمام مرحله')+'</button></td>';
+        });
+        b+='</tr>';
+    });
+    document.getElementById('b').innerHTML=b;
+}
+
+function addProject(){
+    let v=p.value.trim();
+    if(v){projects.push({name:v,done:false,cells:{}});p.value='';render();}
+}
+function addStep(){
+    let v=s.value.trim();
+    if(v){steps.push(v);s.value='';render();}
+}
+function toggleProject(i){
+    projects[i].done=!projects[i].done;
+    render();
+}
+function toggleStep(pi,si){
+    if(!projects[pi].cells[si]) projects[pi].cells[si]={note:'',done:false};
+    projects[pi].cells[si].done=!projects[pi].cells[si].done;
+    render();
+}
+function saveNote(pi,si,val){
+    if(!projects[pi].cells[si]) projects[pi].cells[si]={note:'',done:false};
+    projects[pi].cells[si].note=val;
+}
+render();
+</script>
+
+</body>
+</html>
