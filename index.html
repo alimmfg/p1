@@ -3,118 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت کارگاه</title>
+    <title>مدیریت کارگاه حرفه‌ای</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background: #eee; padding: 10px; }
-        .card { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { padding: 10px; width: 140px; margin: 5px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 10px 15px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 13px; }
-        th { background: #333; color: #fff; }
-        .cell { cursor: pointer; min-height: 50px; white-space: pre-wrap; background: #fdfdfd; }
-        .done-step { background: #d4edda !important; border: 2px solid #28a745 !important; }
-        .done-proj { background: #c3e6cb !important; }
+        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
+        .box { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 1000px; margin: auto; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        input, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-family: Tahoma; font-size: 14px; }
+        input { flex: 1; min-width: 140px; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-p { background: #27ae60; color: white; }
+        .btn-s { background: #2980b9; color: white; }
+        .table-wrap { overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        table { border-collapse: collapse; width: 100%; background: white; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: center; min-width: 140px; }
+        th { background: #34495e; color: white; }
+        .cell { cursor: pointer; white-space: pre-wrap; font-size: 11px; background: #fff; line-height: 1.6; }
+        .step-done { background: #d4edda !important; border: 2px solid #28a745 !important; }
+        .proj-done { background: #e8f5e9 !important; color: #1b5e20; }
+        .del-link { font-size: 10px; color: #e74c3c; display: block; margin-top: 5px; cursor: pointer; text-decoration: underline; }
         
-        #modal { display: none; position: fixed; top: 15%; left: 5%; right: 5%; background: #fff; 
-                 padding: 20px; border: 2px solid #333; z-index: 1000; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
+        /* Modal */
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
+        #noteModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                    background: white; padding: 20px; border-radius: 15px; z-index: 101; width: 85%; max-width: 400px; }
+        
+        .backup-section { margin-top: 20px; padding-top: 15px; border-top: 2px dashed #ccc; display: flex; gap: 10px; justify-content: center; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h3 style="margin-top:0">🛠 مدیریت تولید کارگاه</h3>
-    <input type="text" id="ip" placeholder="نام پروژه">
-    <button style="background:#28a745; color:#fff;" onclick="addP()">+ پروژه</button>
-    <br>
-    <input type="text" id="is" placeholder="نام مرحله">
-    <button style="background:#007bff; color:#fff;" onclick="addS()">+ مرحله</button>
-
-    <div style="overflow-x:auto;">
-        <table>
-            <thead id="h"></thead>
-            <tbody id="b"></tbody>
-        </table>
-    </div>
-</div>
-
-<div id="overlay" onclick="closeM()"></div>
-<div id="modal">
-    <h4 id="mt"></h4>
-    <textarea id="txt" style="width:100%; height:100px; font-family:Tahoma;" placeholder="یادداشت جدید..."></textarea>
-    <br><br>
-    <button style="background:#28a745; color:#fff; width:100%; padding:12px;" onclick="saveN()">➕ ثبت با ساعت جاری</button>
-    <br><br>
-    <button id="fb" style="width:100%; padding:12px;">✅ اتمام این مرحله</button>
-    <br><br>
-    <button style="background:#6c757d; color:#fff; width:100%;" onclick="closeM()">بستن</button>
-</div>
-
-<script>
-    // استفاده از اسم جدید برای دیتابیس جهت اطمینان
-    var S = JSON.parse(localStorage.getItem('DB_STEPS_NEW')) || [];
-    var P = JSON.parse(localStorage.getItem('DB_PROJS_NEW')) || [];
-    var cp, cs;
-
-    function render() {
-        localStorage.setItem('DB_STEPS_NEW', JSON.stringify(S));
-        localStorage.setItem('DB_PROJS_NEW', JSON.stringify(P));
-
-        var h = document.getElementById('h');
-        h.innerHTML = '<tr><th>پروژه</th>' + S.map((s, i) => '<th>'+s+'<br><span style="color:red;cursor:pointer;font-size:10px;" onclick="delS('+i+')">(حذف)</span></th>').join('') + '</tr>';
-
-        var b = document.getElementById('b');
-        b.innerHTML = '';
-        P.forEach((p, pi) => {
-            var row = '<tr class="'+(p.f?'done-proj':'')+'"><td><b>'+p.n+'</b><br><span style="color:green;cursor:pointer;font-size:10px;" onclick="finP('+pi+')">تمام/ادامه</span> | <span style="color:red;cursor:pointer;font-size:10px;" onclick="delP('+pi+')">حذف</span></td>';
-            S.forEach((s, si) => {
-                var d = p.d[si] || {t:'', f:false};
-                var cls = d.f ? 'cell done-step' : 'cell';
-                row += '<td class="'+cls+'" onclick="openM('+pi+','+si+')">' + (d.f?'[تمام] ':'') + d.t + '</td>';
-            });
-            row += '</tr>';
-            b.innerHTML += row;
-        });
-    }
-
-    function addP() { var v = document.getElementById('ip').value; if(v){ P.push({n:v, d:{}, f:false}); document.getElementById('ip').value=''; render(); } }
-    function addS() { var v = document.getElementById('is').value; if(v){ S.push(v); document.getElementById('is').value=''; render(); } }
+<div class="box">
+    <h3 style="text-align:center; margin-top:0;">📋 مدیریت هوشمند تولید و سوابق</h3>
     
-    function openM(pi, si) {
-        cp = pi; cs = si;
-        var d = P[pi].d[si] || {t:'', f:false};
-        document.getElementById('mt').innerText = P[pi].n + ' > ' + S[si];
-        document.getElementById('txt').value = '';
-        document.getElementById('modal').style.display = 'block';
-        document.getElementById('overlay').style.display = 'block';
-        
-        var fb = document.getElementById('fb');
-        fb.style.background = d.f ? "orange" : "#28a745";
-        fb.innerText = d.f ? "↩️ بازگشت به تولید" : "✅ اتمام این مرحله";
-        fb.onclick = function() {
-            if(!P[cp].d[cs]) P[cp].d[cs] = {t:'', f:false};
-            P[cp].d[cs].f = !P[cp].d[cs].f;
-            closeM(); render();
-        };
-    }
+    <div class="input-group">
+        <input type="text" id="p_in" placeholder="نام پروژه جدید">
+        <button class="btn-p" onclick="addP()">+ پروژه</button>
+        <input type="text" id="s_in" placeholder="مرحله جدید">
+        <button class="btn-s" onclick="addS()">+ مرحله</button>
+    </div>
 
-    function saveN() {
-        var v = document.getElementById('txt').value;
-        if(!v) return;
-        if(!P[cp].d[cs]) P[cp].d[cs] = {t:'', f:false};
-        var n = new Date();
-        var time = n.toLocaleDateString('fa-IR') + ' ساعت ' + n.getHours() + ':' + n.getMinutes();
-        P[cp].d[cs].t = time + ': ' + v + '\n' + (P[cp].d[cs].t || '');
-        closeM(); render();
-    }
-
-    function finP(i) { P[i].f = !P[i].f; render(); }
-    function delP(i) { if(confirm('حذف؟')) { P.splice(i,1); render(); } }
-    function delS(i) { if(confirm('حذف؟')) { S.splice(i,1); render(); } }
-    function closeM() { document.getElementById('modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
-
-    render();
-</script>
-</body>
-</html>
+    <div class="table-wrap">
+        <table>
+            <thead><tr id="h_
