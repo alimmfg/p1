@@ -3,172 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>گروه فنی محبوبی</title>
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="icon" href="logo.png">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>مدیریت هوشمند پروژه</title>
     <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
-        .header-box { text-align: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { width: 120px; height: auto; margin-bottom: 10px; }
-        .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; }
-        button { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Tahoma; }
-        .btn-main { background: #1a73e8; color: white; }
-        .project-box { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .step-item { padding: 10px; border-bottom: 1px solid #f0f0f0; }
-        .note-area { font-size: 11px; margin-top: 5px; line-height: 1.6; }
-        .note-general { color: #555; background: #f9f9f9; padding: 5px; border-radius: 4px; border-right: 3px solid #ccc; }
-        .note-finish { color: #0d652d; background: #e6f4ea; padding: 5px; border-radius: 4px; border-right: 3px solid #34a853; margin-top: 3px; }
-        .is-done { background: #ceead6 !important; color: #0d652d !important; }
-        .loading { text-align: center; color: #666; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
-        .edit-icon { font-size: 12px; color: #999; margin-right: 5px; cursor: pointer; }
+        body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; padding: 15px; margin: 0; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: #eee; padding: 15px; border-radius: 10px; }
+        input { padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; flex: 1; min-width: 150px; }
+        button { padding: 10px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-p { background-color: #27ae60; color: white; }
+        .btn-s { background-color: #2980b9; color: white; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #dcdde1; padding: 12px; text-align: center; min-width: 120px; }
+        th { background-color: #34495e; color: white; }
+        .cell-note { cursor: pointer; background-color: #fff; transition: 0.2s; font-size: 13px; }
+        .cell-note:hover { background-color: #f1f2f6; }
+        .has-data { background-color: #e1f5fe !important; border-right: 4px solid #03a9f4; }
+        .del-btn { color: #e74c3c; cursor: pointer; font-size: 11px; display: block; margin-top: 5px; text-decoration: underline; }
+        .edit-hint { font-size: 9px; color: #95a5a6; display: block; }
     </style>
 </head>
 <body>
-    <div class="header-box">
-        <img src="logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/120?text=MAHBUBI'">
-        <div id="status" class="loading">⏳ در حال اتصال...</div>
-        <div class="input-group">
-            <input type="text" id="newProj" placeholder="نام پروژه جدید...">
-            <button class="btn-main" onclick="addProject()">ساخت پروژه</button>
-        </div>
+
+<div class="container">
+    <h2>🛠 سامانه مدیریت کارگاه</h2>
+    
+    <div class="controls">
+        <input type="text" id="pInput" placeholder="نام پروژه جدید...">
+        <button class="btn-p" onclick="addP()">+ افزودن پروژه</button>
+        <input type="text" id="sInput" placeholder="مرحله جدید (مثلاً برش)...">
+        <button class="btn-s" onclick="addS()">+ افزودن مرحله</button>
     </div>
-    <div id="projectList"></div>
 
-    <script>
-        const SB_URL = "https://pffgmrzntpxfyxltltyx.supabase.co";
-        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmZmdtcnpudHB4Znl4bHRsdHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1ODc1ODYsImV4cCI6MjA4MjE2MzU4Nn0.JddeE-vNE74Lhe2T9tCtZ3C94lQFtINvkZit5q0ah7Y"; 
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr id="hRow"></tr>
+            </thead>
+            <tbody id="tBody"></tbody>
+        </table>
+    </div>
+</div>
 
-        let projects = [];
+<script>
+    let steps = JSON.parse(localStorage.getItem('steps_v3')) || [];
+    let projs = JSON.parse(localStorage.getItem('projs_v3')) || [];
 
-        async function loadData() {
-            const { data, error } = await _supabase.from('workshop_data').select('projects_json').eq('id', 1).maybeSingle();
-            if (data) {
-                projects = data.projects_json || [];
-                render();
-                document.getElementById('status').innerText = "✅ همگام‌سازی آنلاین فعال است";
-            }
+    function save() {
+        localStorage.setItem('steps_v3', JSON.stringify(steps));
+        localStorage.setItem('projs_v3', JSON.stringify(projs));
+        render();
+    }
+
+    function addS() { const v = document.getElementById('sInput').value; if(v){ steps.push(v); document.getElementById('sInput').value=''; save(); } }
+    function addP() { const v = document.getElementById('pInput').value; if(v){ projs.push({n:v, d:{}}); document.getElementById('pInput').value=''; save(); } }
+
+    function delS(idx) { if(confirm("این مرحله و تمام یادداشت‌های آن حذف شود؟")){ steps.splice(idx, 1); projs.forEach(p => delete p.d[idx]); save(); } }
+    function delP(idx) { if(confirm("این پروژه حذف شود؟")){ projs.splice(idx, 1); save(); } }
+
+    function editCell(pIdx, sIdx) {
+        const p = projs[pIdx];
+        const oldData = p.d[sIdx] || {txt: "", dt: moment().locale('fa').format('YYYY/MM/DD')};
+        
+        const newTxt = prompt("متن یادداشت را وارد کنید:", oldData.txt);
+        if (newTxt === null) return;
+
+        const newDt = prompt("تاریخ را وارد یا اصلاح کنید:", oldData.dt);
+        if (newDt === null) return;
+
+        if(newTxt.trim() === "" && newDt.trim() === "") {
+            delete p.d[sIdx];
+        } else {
+            p.d[sIdx] = { txt: newTxt, dt: newDt };
         }
+        save();
+    }
 
-        async function saveData() {
-            document.getElementById('status').innerText = "☁️ در حال ذخیره...";
-            await _supabase.from('workshop_data').update({ projects_json: projects }).eq('id', 1);
-            document.getElementById('status').innerText = "✅ ذخیره شد";
-            render();
+    function editHeader(idx, type) {
+        if(type === 's') {
+            const n = prompt("نام جدید مرحله:", steps[idx]);
+            if(n) { steps[idx] = n; save(); }
+        } else {
+            const n = prompt("نام جدید پروژه:", projs[idx].n);
+            if(n) { projs[idx].n = n; save(); }
         }
+    }
 
-        function addProject() {
-            let name = document.getElementById('newProj').value;
-            if(!name) return;
-            projects.push({ id: Date.now(), name: name, steps: [] });
-            document.getElementById('newProj').value = '';
-            saveData();
-        }
+    function render() {
+        const hr = document.getElementById('hRow');
+        hr.innerHTML = '<th>پروژه</th>';
+        steps.forEach((s, i) => {
+            hr.innerHTML += `<th><span onclick="editHeader(${i},'s')">${s}</span><span class="del-btn" onclick="delS(${i})">حذف مرحله</span></th>`;
+        });
 
-        function editProjectName(projId) {
-            let proj = projects.find(p => p.id === projId);
-            let newName = prompt("ویرایش نام پروژه:", proj.name);
-            if (newName && newName !== proj.name) {
-                proj.name = newName;
-                saveData();
-            }
-        }
-
-        function editStepName(projId, stepIdx) {
-            let step = projects.find(p => p.id === projId).steps[stepIdx];
-            let newName = prompt("ویرایش نام مرحله:", step.name);
-            if (newName && newName !== step.name) {
-                step.name = newName;
-                saveData();
-            }
-        }
-
-        function addStep(projId) {
-            let input = document.getElementById('input-' + projId);
-            if(!input.value) return;
-            projects.find(p => p.id === projId).steps.push({ name: input.value, done: false, date: '', note: '', finishNote: '' });
-            input.value = '';
-            saveData();
-        }
-
-        function addGeneralNote(projId, stepIdx) {
-            let note = prompt("یادداشت فنی:");
-            if (note !== null) {
-                let now = moment().locale('fa').format('MM/DD HH:mm');
-                projects.find(p => p.id === projId).steps[stepIdx].note = note ? `${note} (${now})` : '';
-                saveData();
-            }
-        }
-
-        function finishStep(projId, stepIdx) {
-            let step = projects.find(p => p.id === projId).steps[stepIdx];
-            if (!step.done) {
-                let fNote = prompt("گزارش پایان کار:");
-                if (fNote !== null) {
-                    step.done = true;
-                    step.date = moment().locale('fa').format('YYYY/MM/DD HH:mm');
-                    step.finishNote = fNote ? `گزارش نهایی: ${fNote}` : 'پایان یافت';
-                    saveData();
-                }
-            } else {
-                if(confirm("لغو وضعیت پایان؟")) {
-                    step.done = false;
-                    step.finishNote = '';
-                    saveData();
-                }
-            }
-        }
-
-        function deleteProject(projId) {
-            if(confirm("حذف کامل پروژه؟")) {
-                projects = projects.filter(p => p.id !== projId);
-                saveData();
-            }
-        }
-
-        function render() {
-            const container = document.getElementById('projectList');
-            container.innerHTML = '';
-            projects.forEach(proj => {
-                container.innerHTML += `
-                    <div class="project-box">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <span style="font-weight:bold; color:#1a73e8; cursor:pointer;" onclick="editProjectName(${proj.id})">
-                                🛠 ${proj.name} <span class="edit-icon">✏️</span>
-                            </span>
-                            <button style="color:#ccc; background:none; font-size:10px;" onclick="deleteProject(${proj.id})">حذف</button>
-                        </div>
-                        <div class="input-group">
-                            <input type="text" id="input-${proj.id}" placeholder="افزودن مرحله...">
-                            <button style="background:#34a853; color:white;" onclick="addStep(${proj.id})">+</button>
-                        </div>
-                        ${proj.steps.map((step, idx) => `
-                            <div class="step-item">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div onclick="editStepName(${proj.id}, ${idx})" style="cursor:pointer; flex:1;">
-                                        <div style="${step.done ? 'text-decoration:line-through; color:#888;' : 'font-weight:bold;'}">${step.name} <span style="font-size:10px; color:#ccc;">✏️</span></div>
-                                        <div style="font-size:9px; color:#999;">${step.date}</div>
-                                    </div>
-                                    <div style="display:flex; gap:5px;">
-                                        <button onclick="addGeneralNote(${proj.id}, ${idx})">📝</button>
-                                        <button class="${step.done ? 'is-done' : ''}" style="border:1px solid #ddd; padding:5px 10px; border-radius:5px;" onclick="finishStep(${proj.id}, ${idx})">
-                                            ${step.done ? '✅' : '🏁 پایان'}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="note-area">
-                                    ${step.note ? `<div class="note-general">💬 ${step.note}</div>` : ''}
-                                    ${step.finishNote ? `<div class="note-finish">📋 ${step.finishNote}</div>` : ''}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>`;
+        const tb = document.getElementById('tBody');
+        tb.innerHTML = '';
+        projs.forEach((p, pi) => {
+            let r = `<tr><td><b onclick="editHeader(${pi},'p')">${p.n}</b><span class="del-btn" onclick="delP(${pi})">حذف پروژه</span></td>`;
+            steps.forEach((s, si) => {
+                const data = p.d[si];
+                const display = data ? `<b>${data.txt}</b><br><small>${data.dt}</small>` : '<span style="color:#ccc">ثبت یادداشت</span>';
+                const cls = data ? 'has-data' : '';
+                r += `<td class="cell-note ${cls}" onclick="editCell(${pi}, ${si})">${display}</td>`;
             });
-        }
-        loadData();
-    </script>
+            r += '</tr>';
+            tb.innerHTML += r;
+        });
+    }
+    render();
+</script>
 </body>
 </html>
