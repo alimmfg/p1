@@ -3,112 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت کارگاه</title>
+    <title>مدیریت جامع کارگاه</title>
     <style>
-        body { font-family: sans-serif; background: #eee; padding: 10px; direction: rtl; }
-        .box { background: white; padding: 10px; border-radius: 10px; }
-        .input-area { margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        input { padding: 8px; margin: 5px; border: 1px solid #ccc; width: 150px; }
-        button { padding: 8px 12px; cursor: pointer; font-weight: bold; border-radius: 5px; border: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
-        th, td { border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px; }
+        body { font-family: Tahoma, sans-serif; background: #f0f0f0; padding: 10px; direction: rtl; text-align: right; }
+        .container { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .input-box { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        input, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: Tahoma; }
+        button { padding: 10px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; font-size: 13px; }
         th { background: #333; color: white; }
-        .cell { cursor: pointer; min-height: 40px; }
-        .green { background: #9f9 !important; } /* مرحله تمام شده */
-        .blue { background: #cef !important; } /* یادداشت دار */
-        .del { color: red; font-size: 10px; display: block; margin-top: 5px; cursor: pointer; }
+        .cell { cursor: pointer; min-height: 45px; white-space: pre-wrap; background: #fff; }
+        /* رنگ‌ها */
+        .step-done { background: #c8e6c9 !important; border: 2px solid #4caf50 !important; } /* مرحله تمام شده */
+        .proj-done { background: #a5d6a7 !important; } /* کل پروژه تمام شده */
+        .proj-done td { background: #a5d6a7 !important; color: #1b5e20; }
+        .has-note { background: #fff9c4; } /* یادداشت دارد */
+        .del { color: #d32f2f; font-size: 10px; cursor: pointer; display: block; margin-top: 5px; text-decoration: underline; }
         
-        #pop { display: none; position: fixed; top: 15%; left: 5%; right: 5%; background: white; 
-               padding: 20px; border: 3px solid #333; z-index: 1000; border-radius: 10px; }
+        /* پنجره ویرایش */
+        #modal { display: none; position: fixed; top: 10%; left: 5%; right: 5%; background: white; 
+                 padding: 20px; border: 2px solid #333; z-index: 1000; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h3>🛠 مدیریت کارگاه (نسخه ساده)</h3>
-    <div class="input-area">
-        <input type="text" id="ip" placeholder="نام پروژه">
-        <button style="background:green; color:white;" onclick="addP()">+ پروژه</button>
-        <br>
-        <input type="text" id="is" placeholder="نام مرحله">
-        <button style="background:blue; color:white;" onclick="addS()">+ مرحله</button>
+<div class="container">
+    <h3 style="margin:0 0 15px 0; color:#333;">📋 سامانه مدیریت پروژه و مراحل</h3>
+    <div class="input-box">
+        <input type="text" id="pInp" placeholder="نام پروژه (مثلاً پرس ۱)">
+        <button style="background:#2e7d32; color:white;" onclick="addP()">+ پروژه</button>
+        <input type="text" id="sInp" placeholder="مرحله (مثلاً جوشکاری)">
+        <button style="background:#1565c0; color:white;" onclick="addS()">+ مرحله</button>
     </div>
 
     <div style="overflow-x:auto;">
-        <table id="tbl">
-            <thead><tr id="hr"></tr></thead>
-            <tbody id="tb"></tbody>
+        <table>
+            <thead><tr id="hRow"></tr></thead>
+            <tbody id="tBody"></tbody>
         </table>
     </div>
 </div>
 
-<div id="pop">
-    <b>یادداشت و وضعیت:</b><br>
-    <textarea id="txt" style="width:100%; height:80px; margin-top:10px;"></textarea><br>
-    <input type="text" id="dt" placeholder="تاریخ" style="width:90%"><br><br>
-    <button id="btnFin" style="background:green; color:white; width:100%">✅ اتمام این مرحله</button><br><br>
-    <button onclick="save()" style="background:blue; color:white;">ذخیره یادداشت</button>
-    <button onclick="document.getElementById('pop').style.display='none'">بستن</button>
+<div id="overlay" onclick="closeM()"></div>
+<div id="modal">
+    <h4 id="mTitle" style="margin-top:0">ویرایش</h4>
+    <textarea id="mTxt" style="width:100%; height:100px; box-sizing:border-box;" placeholder="یادداشت را اینجا بنویسید..."></textarea>
+    <br><br>
+    <input type="text" id="mDate" style="width:100%; box-sizing:border-box;" placeholder="تاریخ">
+    <br><br>
+    <button id="btnFinishStep" style="width:100%; background:#4caf50; color:white; margin-bottom:10px;">✅ اتمام این مرحله</button>
+    <div style="display:flex; gap:10px;">
+        <button style="flex:1; background:#1976d2; color:white;" onclick="saveNote()">ذخیره متن</button>
+        <button style="flex:1; background:#9e9e9e; color:white;" onclick="closeM()">لغو</button>
+    </div>
 </div>
 
 <script>
-    var S = JSON.parse(localStorage.getItem('ST_V8')) || [];
-    var P = JSON.parse(localStorage.getItem('PR_V8')) || [];
-    var currP, currS;
+    var steps = JSON.parse(localStorage.getItem('Steps_V9')) || [];
+    var projs = JSON.parse(localStorage.getItem('Projs_V9')) || [];
+    var curP, curS;
 
-    function draw() {
-        localStorage.setItem('ST_V8', JSON.stringify(S));
-        localStorage.setItem('PR_V8', JSON.stringify(P));
+    function refresh() {
+        localStorage.setItem('Steps_V9', JSON.stringify(steps));
+        localStorage.setItem('Projs_V9', JSON.stringify(projs));
 
-        var hr = document.getElementById('hr');
+        var hr = document.getElementById('hRow');
         hr.innerHTML = '<th>پروژه</th>';
-        S.forEach((s, i) => hr.innerHTML += '<th>'+s+' <span class="del" onclick="delS('+i+')">حذف</span></th>');
+        steps.forEach((s, i) => hr.innerHTML += '<th>' + s + '<span class="del" onclick="delS('+i+')">حذف</span></th>');
 
-        var tb = document.getElementById('tb');
+        var tb = document.getElementById('tBody');
         tb.innerHTML = '';
-        P.forEach((p, pi) => {
-            var r = '<tr><td><b>'+p.n+'</b> <span class="del" onclick="delP('+pi+')">حذف</span></td>';
-            S.forEach((s, si) => {
+        projs.forEach((p, pi) => {
+            var rowCls = p.isDone ? 'proj-done' : '';
+            var row = '<tr class="'+rowCls+'"><td><b>'+p.n+'</b>' +
+                      '<span class="del" style="color:#2e7d32" onclick="toggleProj('+pi+')">'+(p.isDone?'↩️ بازگشت':'✅ اتمام کل پروژه')+'</span>' +
+                      '<span class="del" onclick="delP('+pi+')">🗑 حذف</span></td>';
+            
+            steps.forEach((s, si) => {
                 var d = p.d[si] || {t:'', dt:'', f:false};
-                var cls = d.f ? 'cell green' : (d.t ? 'cell blue' : 'cell');
-                var text = d.f ? '✅ تمام شده<br>'+d.t : (d.t || '---');
-                r += '<td class="'+cls+'" onclick="openP('+pi+','+si+')">'+text+'<br><small>'+d.dt+'</small></td>';
+                var cls = 'cell';
+                if(d.f) cls += ' step-done';
+                else if(d.t) cls += ' has-note';
+                
+                var content = d.f ? '✅ تمام شده<br>' : '';
+                content += d.t ? '<b>'+d.t+'</b><br>' : '';
+                content += '<small>'+d.dt+'</small>';
+                row += '<td class="'+cls+'" onclick="openM('+pi+','+si+')">' + (d.f || d.t ? content : '---') + '</td>';
             });
-            r += '</tr>';
-            tb.innerHTML += r;
+            row += '</tr>';
+            tb.innerHTML += row;
         });
     }
 
-    function addP() { var v = document.getElementById('ip').value; if(v){ P.push({n:v, d:{}}); document.getElementById('ip').value=''; draw(); } }
-    function addS() { var v = document.getElementById('is').value; if(v){ S.push(v); document.getElementById('is').value=''; draw(); } }
+    function addP() { var v = document.getElementById('pInp').value; if(v){ projs.push({n:v, d:{}, isDone:false}); document.getElementById('pInp').value=''; refresh(); } }
+    function addS() { var v = document.getElementById('sInp').value; if(v){ steps.push(v); document.getElementById('sInp').value=''; refresh(); } }
     
-    function openP(pi, si) {
-        currP = pi; currS = si;
-        var d = P[pi].d[si] || {t:'', dt: new Date().toLocaleDateString('fa-IR'), f:false};
-        document.getElementById('txt').value = d.t;
-        document.getElementById('dt').value = d.dt;
-        document.getElementById('pop').style.display = 'block';
+    function openM(pi, si) {
+        curP = pi; curS = si;
+        var d = projs[pi].d[si] || {t:'', dt: new Date().toLocaleDateString('fa-IR'), f:false};
+        document.getElementById('mTitle').innerText = projs[pi].n + ' > ' + steps[si];
+        document.getElementById('mTxt').value = d.t;
+        document.getElementById('mDate').value = d.dt;
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
         
-        var b = document.getElementById('btnFin');
-        b.innerText = d.f ? "↩️ بازگشت به تولید" : "✅ اتمام این مرحله";
+        var b = document.getElementById('btnFinishStep');
+        b.innerText = d.f ? "↩️ بازگشت به در حال انجام" : "✅ اتمام این مرحله";
+        b.style.background = d.f ? "#f57c00" : "#4caf50";
         b.onclick = function() {
-            if(!P[currP].d[currS]) P[currP].d[currS] = {t:'', dt:'', f:false};
-            P[currP].d[currS].f = !P[currP].d[currS].f;
-            document.getElementById('pop').style.display='none'; draw();
+            if(!projs[curP].d[curS]) projs[curP].d[curS] = {t:'', dt:'', f:false};
+            projs[curP].d[curS].f = !projs[curP].d[curS].f;
+            closeM(); refresh();
         };
     }
 
-    function save() {
-        if(!P[currP].d[currS]) P[currP].d[currS] = {f:false};
-        P[currP].d[currS].t = document.getElementById('txt').value;
-        P[currP].d[currS].dt = document.getElementById('dt').value;
-        document.getElementById('pop').style.display='none'; draw();
+    function saveNote() {
+        if(!projs[curP].d[curS]) projs[curP].d[curS] = {f:false};
+        projs[curP].d[curS].t = document.getElementById('mTxt').value;
+        projs[curP].d[curS].dt = document.getElementById('mDate').value;
+        closeM(); refresh();
     }
 
-    function delP(i) { if(confirm('حذف؟')) { P.splice(i,1); draw(); } }
-    function delS(i) { if(confirm('حذف؟')) { S.splice(i,1); P.forEach(p=>delete p.d[i]); draw(); } }
+    function closeM() { document.getElementById('modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
+    function delP(i) { if(confirm('حذف پروژه؟')) { projs.splice(i,1); refresh(); } }
+    function delS(i) { if(confirm('حذف مرحله؟')) { steps.splice(i,1); projs.forEach(p=>delete p.d[i]); refresh(); } }
+    function toggleProj(i) { projs[i].isDone = !projs[i].isDone; refresh(); }
 
-    draw();
+    refresh();
 </script>
 </body>
 </html>
