@@ -2,165 +2,170 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
-        .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input, textarea { padding: 12px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; font-family: Tahoma; width: 100%; box-sizing: border-box; }
-        .btn-p { background: #27ae60; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer; width: 100px; }
-        .btn-s { background: #2980b9; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer; width: 100px; }
+        body { font-family: Tahoma; background: #f4f7f6; padding: 20px; direction: rtl; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        input, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: Tahoma; margin: 5px 0; width: 100%; box-sizing: border-box; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: center; vertical-align: top; }
-        th { background: #34495e; color: white; position: sticky; top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: center; vertical-align: top; }
+        th { background: #2c3e50; color: white; }
         
-        .clickable-text { cursor: pointer; display: block; padding: 5px; border-radius: 4px; }
-        .clickable-text:hover { background: #fdf2e9; color: #d35400; }
+        .clickable { cursor: pointer; transition: 0.2s; }
+        .clickable:hover { color: #e67e22; background: #fdf2e9; }
 
-        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 12px; white-space: pre-wrap; cursor: pointer; }
-        .date-tag { color: #d35400; font-weight: bold; font-size: 10px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        .note-box { background: #feffd4; border: 1px solid #d4d442; padding: 8px; margin-bottom: 5px; border-radius: 5px; text-align: right; font-size: 13px; white-space: pre-wrap; }
+        .time-tag { color: #c0392b; font-size: 10px; font-weight: bold; border-bottom: 1px solid #ddd; display: block; margin-bottom: 3px; }
+
+        /* پنجره یادداشت */
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.5); z-index: 1000; width: 400px; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
         
-        #noteModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 450px; }
-        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
-        
-        .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; border: none; padding: 5px; border-radius: 4px; cursor: pointer; }
-        .done-row { background: #d4edda !important; } 
-        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
-        .del-text { color: #e74c3c; font-size: 10px; cursor: pointer; margin-top: 4px; display: inline-block; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-p { background: #27ae60; color: white; width: 120px; }
+        .btn-s { background: #2980b9; color: white; width: 120px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; padding: 12px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h3 style="text-align:center;">مدیریت هوشمند کارگاه</h3>
-    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <input type="text" id="p_in" placeholder="نام پروژه جدید">
-        <button class="btn-p" onclick="addP()">+ پروژه</button>
+<div class="container">
+    <h2 style="text-align:center">سیستم مدیریت کارگاه</h2>
+    
+    <div style="display:flex; gap:10px; align-items:center">
+        <input type="text" id="p_name" placeholder="نام پروژه">
+        <button class="btn btn-p" onclick="addProject()">+ پروژه</button>
     </div>
-    <div style="display: flex; gap: 10px;">
-        <input type="text" id="s_in" placeholder="نام مرحله جدید">
-        <button class="btn-s" onclick="addS()">+ مرحله</button>
+    <div style="display:flex; gap:10px; align-items:center">
+        <input type="text" id="s_name" placeholder="نام مرحله">
+        <button class="btn btn-s" onclick="addStep()">+ مرحله</button>
     </div>
 
     <div style="overflow-x: auto;">
         <table>
-            <thead id="thead"></thead>
-            <tbody id="tbody"></tbody>
+            <thead id="h_row"></thead>
+            <tbody id="b_rows"></tbody>
         </table>
     </div>
 
-    <div style="margin-top: 20px; display: flex; gap: 10px;">
-        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">💾 دانلود بک‌آپ</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">📥 بازیابی فایل</button>
-        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
+    <div style="margin-top:30px; display:flex; gap:10px">
+        <button onclick="downloadBackup()" style="background:#8e44ad; color:white;" class="btn">💾 دانلود نسخه پشتیبان (بک‌آپ)</button>
+        <button onclick="document.getElementById('fileIn').click()" style="background:#e67e22; color:white;" class="btn">📥 بازیابی فایل (Restore)</button>
+        <input type="file" id="fileIn" style="display:none" onchange="uploadBackup(event)">
     </div>
 </div>
 
-<div id="modalOverlay" onclick="closeModal()"></div>
-<div id="noteModal">
-    <h4 id="modalTitle">ثبت / ویرایش یادداشت</h4>
-    <textarea id="modalText" rows="8" placeholder="متن یادداشت..."></textarea>
-    <div style="display:flex; gap:10px;">
-        <button onclick="saveNote()" style="flex:2; background:#27ae60; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">ذخیره</button>
-        <button onclick="closeModal()" style="flex:1; background:#bdc3c7; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer;">بستن</button>
-    </div>
+<div id="overlay" onclick="closeNote()"></div>
+<div id="modal">
+    <h4 id="m_title">ویرایش یادداشت</h4>
+    <textarea id="m_text" rows="10" placeholder="متن را اینجا بنویسید... (اینتر بزنید)"></textarea>
+    <button class="btn btn-save" onclick="saveNote()">ذخیره تغییرات</button>
 </div>
 
 <script>
-    var prjs = JSON.parse(localStorage.getItem('WORKSHOP_V11')) || [];
-    var stps = JSON.parse(localStorage.getItem('STEPS_V11')) || [];
-    var activeRef = null;
-    var lastContent = ""; // برای تشخیص تغییر متن
+    let data = JSON.parse(localStorage.getItem('MY_WORKSHOP_DB')) || { projects: [], steps: [] };
+    let currentEdit = null;
 
-    function refresh() {
-        localStorage.setItem('WORKSHOP_V11', JSON.stringify(prjs));
-        localStorage.setItem('STEPS_V11', JSON.stringify(stps));
-
-        var hHtml = '<tr><th>اطلاعات پروژه</th>';
-        stps.forEach((s, i) => {
-            hHtml += `<th><span class="clickable-text" onclick="editS(${i})">${s}</span><span class="del-text" onclick="delS(${i})">[حذف]</span></th>`;
+    function render() {
+        localStorage.setItem('MY_WORKSHOP_DB', JSON.stringify(data));
+        
+        // رندر سرتیتر
+        let head = '<tr><th>نام پروژه</th>';
+        data.steps.forEach((s, i) => {
+            head += `<th class="clickable" onclick="editStepName(${i})">${s} <br><small style="color:#ff7675" onclick="delStep(event, ${i})">[حذف]</small></th>`;
         });
-        document.getElementById('thead').innerHTML = hHtml + '</tr>';
+        document.getElementById('h_row').innerHTML = head + '</tr>';
 
-        var bHtml = '';
-        prjs.forEach((p, j) => {
-            bHtml += `<tr class="${p.f ? 'done-row' : ''}"><td style="min-width:140px"><b class="clickable-text" onclick="editP(${j})">${p.n}</b><button class="btn-finish" onclick="finishP(${j})">${p.f?'↩ بازگشت':'✓ پایان پروژه'}</button><span class="del-text" onclick="delP(${j})">حذف پروژه</span></td>`;
-            stps.forEach((s, k) => {
-                var cell = p.c[k] || {logs:[], f:false};
-                var logsHtml = (cell.logs || []).map((l, m) => `<div class="log-item" onclick="event.stopPropagation(); openNoteModal(${j},${k},${m})"><span class="date-tag">${l.d}</span>${l.t}</div>`).join('');
-                bHtml += `<td class="${cell.f ? 'done-cell' : ''}"><div style="min-height:70px; cursor:pointer;" onclick="openNoteModal(${j},${k})">${logsHtml || '<small style="color:#ccc">ثبت یادداشت...</small>'}</div><button class="btn-finish" style="background:#2980b9" onclick="finishS(${j},${k})">${cell.f?'↩':'✅ اتمام'}</button></td>`;
+        // رندر بدنه
+        let body = '';
+        data.projects.forEach((p, pi) => {
+            body += `<tr>
+                <td class="clickable" onclick="editProjName(${pi})"><b>${p.name}</b><br><small style="color:red" onclick="delProj(event, ${pi})">[حذف کل]</small></td>`;
+            data.steps.forEach((s, si) => {
+                let cell = p.cells[si] || { logs: [] };
+                let logsHtml = cell.logs.map((l, li) => 
+                    `<div class="note-box" onclick="openNote(${pi}, ${si}, ${li})"><span class="time-tag">${l.time}</span>${l.text}</div>`
+                ).join('');
+                body += `<td onclick="openNote(${pi}, ${si})">${logsHtml || '<small style="color:#ccc">کلیک برای یادداشت</small>'}</td>`;
             });
-            bHtml += '</tr>';
+            body += '</tr>';
         });
-        document.getElementById('tbody').innerHTML = bHtml;
+        document.getElementById('b_rows').innerHTML = body;
     }
 
-    function openNoteModal(pjIdx, stIdx, logIdx = null) {
-        activeRef = { pjIdx, stIdx, logIdx };
-        var text = (logIdx !== null) ? prjs[pjIdx].c[stIdx].logs[logIdx].t : "";
-        lastContent = text; // ذخیره متن قدیمی
-        document.getElementById('modalText').value = text;
-        document.getElementById('modalOverlay').style.display = 'block';
-        document.getElementById('noteModal').style.display = 'block';
-        document.getElementById('modalText').focus();
+    function openNote(pi, si, li = null) {
+        currentEdit = { pi, si, li };
+        let text = li !== null ? data.projects[pi].cells[si].logs[li].text : "";
+        document.getElementById('m_text').value = text;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('modal').style.display = 'block';
     }
 
     function saveNote() {
-        var txt = document.getElementById('modalText').value.trim();
-        var { pjIdx, stIdx, logIdx } = activeRef;
-        if (!prjs[pjIdx].c[stIdx]) prjs[pjIdx].c[stIdx] = {logs:[], f:false};
+        let { pi, si, li } = currentEdit;
+        let newText = document.getElementById('m_text').value.trim();
+        let now = new Date().toLocaleDateString('fa-IR') + " ساعت " + new Date().getHours() + ":" + new Date().getMinutes();
 
-        var now = new Date();
-        var timeStr = now.getHours() + ":" + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
-        var timeStamp = "\n[ ویرایش در " + now.toLocaleDateString('fa-IR') + " ساعت " + timeStr + " ]\n";
+        if (!data.projects[pi].cells[si]) data.projects[pi].cells[si] = { logs: [] };
 
-        if (txt === "") {
-            if (logIdx !== null) prjs[pjIdx].c[stIdx].logs.splice(logIdx, 1);
-        } else {
-            if (logIdx !== null) {
-                // اگر متن تغییر کرده بود، زمان جدید اضافه کن
-                if (txt !== lastContent) {
-                    // فقط اگر کاربر متنی اضافه کرده باشد، زمانِ جدید را به انتهای همان یادداشت می‌چسباند
-                    prjs[pjIdx].c[stIdx].logs[logIdx].t = txt + timeStamp;
-                } else {
-                    prjs[pjIdx].c[stIdx].logs[logIdx].t = txt;
-                }
-            } else {
-                // یادداشت کاملاً جدید
-                var firstStamp = now.toLocaleDateString('fa-IR') + " ساعت " + timeStr;
-                prjs[pjIdx].c[stIdx].logs.unshift({d: firstStamp, t: txt});
+        if (li !== null) {
+            // ویرایش یادداشت قبلی
+            if (data.projects[pi].cells[si].logs[li].text !== newText) {
+                data.projects[pi].cells[si].logs[li].text = newText + "\n(اصلاح در: " + now + ")";
             }
+        } else if (newText !== "") {
+            // یادداشت جدید
+            data.projects[pi].cells[si].logs.unshift({ time: now, text: newText });
         }
-        closeModal();
-        refresh();
+        closeNote();
+        render();
     }
 
-    function closeModal() {
-        document.getElementById('modalOverlay').style.display = 'none';
-        document.getElementById('noteModal').style.display = 'none';
+    function closeNote() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('modal').style.display = 'none';
     }
 
-    function exportData() {
-        var blob = new Blob([JSON.stringify({p:prjs, s:stps})], {type:'application/json'});
-        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "workshop_backup.json"; a.click();
+    function addProject() {
+        let name = document.getElementById('p_name').value;
+        if (name) { data.projects.push({ name, cells: {} }); document.getElementById('p_name').value = ''; render(); }
     }
 
-    function importData(e) {
-        var reader = new FileReader();
-        reader.onload = function(ev) { try { var d = JSON.parse(ev.target.result); prjs = d.p; stps = d.s; refresh(); alert("بازیابی شد"); } catch(e){alert("خطا")} };
+    function addStep() {
+        let name = document.getElementById('s_name').value;
+        if (name) { data.steps.push(name); document.getElementById('s_name').value = ''; render(); }
+    }
+
+    function editProjName(i) { let n = prompt("نام جدید پروژه:", data.projects[i].name); if(n) { data.projects[i].name = n; render(); } }
+    function editStepName(i) { let n = prompt("نام جدید مرحله:", data.steps[i]); if(n) { data.steps[i] = n; render(); } }
+    function delProj(e, i) { e.stopPropagation(); if(confirm("حذف پروژه؟")) { data.projects.splice(i, 1); render(); } }
+    function delStep(e, i) { e.stopPropagation(); if(confirm("حذف مرحله؟")) { data.steps.splice(i, 1); render(); } }
+
+    // --- توابع بک‌آپ و بازیابی ---
+    function downloadBackup() {
+        let blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "workshop_data.json";
+        a.click();
+    }
+
+    function uploadBackup(e) {
+        let reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                let imported = JSON.parse(ev.target.result);
+                if (imported.projects && imported.steps) {
+                    data = imported;
+                    render();
+                    alert("با موفقیت بازیابی شد.");
+                }
+            } catch (err) { alert("فایل معتبر نیست."); }
+        };
         reader.readAsText(e.target.files[0]);
     }
 
-    function addP() { var v = document.getElementById('p_in').value; if(v.trim()){ prjs.push({n:v, c:{}, f:false}); document.getElementById('p_in').value=""; refresh(); } }
-    function addS() { var v = document.getElementById('s_in').value; if(v.trim()){ stps.push(v); document.getElementById('s_in').value=""; refresh(); } }
-    function editS(i) { var n = prompt("نام جدید مرحله:", stps[i]); if(n) { stps[i] = n; refresh(); } }
-    function editP(i) { var n = prompt("نام جدید پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
-    function finishP(i) { prjs[i].f = !prjs[i].f; refresh(); }
-    function finishS(pi, si) { if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[], f:false}; prjs[pi].c[si].f = !prjs[pi].c[si].f; refresh(); }
-    function delP(i) { if(confirm("حذف پروژه؟")) { prjs.splice(i, 1); refresh(); } }
-    function delS(i) { if(confirm("حذف مرحله؟")) { stps.splice(i, 1); refresh(); } }
-
-    refresh();
+    render();
 </script>
 </body>
 </html>
