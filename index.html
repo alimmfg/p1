@@ -1,68 +1,151 @@
 <!DOCTYPE html>
-<html dir="rtl">
+<html lang="fa">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: Tahoma, sans-serif; background: #f0f2f5; padding: 10px; direction: rtl; }
-        .card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input, textarea { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; font-family: Tahoma; }
-        button { padding: 8px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin: 2px; }
-        .btn-p { background: #27ae60; color: white; }
-        .btn-s { background: #2980b9; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: center; vertical-align: top; }
-        th { background: #34495e; color: white; cursor: pointer; }
-        .p-name { cursor: pointer; font-weight: bold; font-size: 14px; display: block; padding: 5px; }
-        .log-item { background: #fffdf0; border: 1px solid #e6db55; padding: 8px; margin-bottom: 8px; border-radius: 6px; text-align: right; font-size: 11px; box-shadow: 1px 1px 3px rgba(0,0,0,0.05); cursor: pointer; }
-        .date-tag { color: #d35400; font-weight: bold; font-size: 9px; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px; }
-        .done-row { background: #d4edda !important; } 
-        .done-cell { background: #e3f2fd !important; border: 2px solid #2196f3 !important; }
-        .btn-finish { font-size: 10px; background: #576574; color: white; width: 100%; margin-top: 5px; }
-    </style>
+<meta charset="UTF-8">
+<title>مدیریت پروژه</title>
+<style>
+body{font-family:Tahoma;background:#f4f4f4;margin:0;padding:10px}
+.project{background:#fff;border-radius:10px;padding:10px;margin-bottom:10px}
+.project-title{font-weight:bold;font-size:18px;cursor:pointer}
+.step{margin-top:8px;padding:6px;border:1px solid #ddd;border-radius:6px}
+.step-title{font-weight:bold;cursor:pointer}
+.log{background:#eee;padding:6px;border-radius:6px;margin-top:5px;cursor:pointer}
+.done{opacity:.5;text-decoration:line-through}
+button{margin-top:5px}
+</style>
 </head>
+
 <body>
 
-<div class="card">
-    <h3 style="text-align:center;">مدیریت هوشمند کارگاه</h3>
-    <input type="text" id="p_in" placeholder="نام پروژه جدید">
-    <button class="btn-p" onclick="addP()">+ پروژه</button>
-    <br>
-    <input type="text" id="s_in" placeholder="نام مرحله جدید">
-    <button class="btn-s" onclick="addS()">+ مرحله</button>
+<button onclick="newProject()">➕ پروژه جدید</button>
+<div id="app"></div>
 
-    <div style="overflow-x: auto;">
-        <table>
-            <thead id="thead"></thead>
-            <tbody id="tbody"></tbody>
-        </table>
-    </div>
-
-    <div style="margin-top: 20px; display: flex; gap: 10px;">
-        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white;">💾 دانلود بک‌آپ</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white;">📥 بازیابی فایل</button>
-        <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
-    </div>
+<!-- مودال یادداشت -->
+<div id="logModal" style="
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.5);
+z-index:999;
+align-items:center;
+justify-content:center;
+">
+<div style="background:white;padding:15px;border-radius:10px;width:90%;max-width:400px;">
+<h4>یادداشت</h4>
+<textarea id="logText" rows="6" style="width:100%;font-family:Tahoma"></textarea>
+<br><br>
+<button onclick="saveLog()">ثبت</button>
+<button onclick="closeLog()">انصراف</button>
+</div>
 </div>
 
 <script>
-    var prjs = JSON.parse(localStorage.getItem('K_DATA_V5')) || [];
-    var stps = JSON.parse(localStorage.getItem('S_DATA_V5')) || [];
+var prjs = [];
+var curP=null, curS=null, curL=null;
+var app = document.getElementById("app");
+var logModal=document.getElementById("logModal");
+var logText=document.getElementById("logText");
 
-    function refresh() {
-        localStorage.setItem('K_DATA_V5', JSON.stringify(prjs));
-        localStorage.setItem('S_DATA_V5', JSON.stringify(stps));
+function newProject(){
+    var n = prompt("نام پروژه:");
+    if(!n) return;
+    prjs.push({n:n,s:[],f:false,c:{}});
+    refresh();
+}
 
-        var h = document.getElementById('thead');
-        var hHtml = '<tr><th>اطلاعات پروژه</th>';
-        for(var i=0; i<stps.length; i++) {
-            hHtml += '<th onclick="editS('+i+')">' + stps[i] + 
-                     '<br><small style="font-size:8px; font-weight:normal;">(کلیک برای ویرایش)</small></th>';
-        }
-        h.innerHTML = hHtml + '</tr>';
+function refresh(){
+    app.innerHTML="";
+    prjs.forEach((p,pi)=>{
+        var d=document.createElement("div");
+        d.className="project"+(p.f?" done":"");
+        d.innerHTML=`
+        <div class="project-title" onclick="editProject(${pi})">${p.n}</div>
+        <button onclick="newStep(${pi})">➕ مرحله</button>
+        <button onclick="finishProject(${pi})">اتمام پروژه</button>
+        `;
+        p.s.forEach((s,si)=>{
+            var sd=document.createElement("div");
+            sd.className="step"+(p.c[si]?.f?" done":"");
+            sd.innerHTML=`
+            <div class="step-title" onclick="editStep(${pi},${si})">${s}</div>
+            <button onclick="addLog(${pi},${si})">یادداشت</button>
+            <button onclick="finishStep(${pi},${si})">اتمام مرحله</button>
+            `;
+            (p.c[si]?.logs||[]).forEach((l,li)=>{
+                var lg=document.createElement("div");
+                lg.className="log";
+                lg.innerHTML=l.t.replace(/\n/g,"<br>");
+                lg.onclick=()=>editLog(pi,si,li);
+                sd.appendChild(lg);
+            });
+            d.appendChild(sd);
+        });
+        app.appendChild(d);
+    });
+}
 
-        var b = document.getElementById('tbody');
-        var bHtml = '';
-        for(var j=0; j<prjs.length; j++) {
-            var rClass = prjs[j].f ? 'done-row' : '';
-            bHtml += '<tr class="'+rClass+'"><td>
+function editProject(pi){
+    var n=prompt("نام پروژه:",prjs[pi].n);
+    if(n) prjs[pi].n=n;
+    refresh();
+}
+
+function editStep(pi,si){
+    var n=prompt("نام مرحله:",prjs[pi].s[si]);
+    if(n) prjs[pi].s[si]=n;
+    refresh();
+}
+
+function newStep(pi){
+    var n=prompt("نام مرحله:");
+    if(!n) return;
+    prjs[pi].s.push(n);
+    refresh();
+}
+
+function finishProject(pi){
+    prjs[pi].f=true;
+    refresh();
+}
+
+function finishStep(pi,si){
+    if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[],f:false};
+    prjs[pi].c[si].f=true;
+    refresh();
+}
+
+function addLog(pi,si){
+    curP=pi;curS=si;curL=null;
+    logText.value="";
+    logModal.style.display="flex";
+    logText.focus();
+}
+
+function editLog(pi,si,li){
+    curP=pi;curS=si;curL=li;
+    logText.value=prjs[pi].c[si].logs[li].t;
+    logModal.style.display="flex";
+    logText.focus();
+}
+
+function saveLog(){
+    var t=logText.value;
+    if(!t.trim()) return;
+    if(!prjs[curP].c[curS])
+        prjs[curP].c[curS]={logs:[],f:false};
+    if(curL!=null){
+        prjs[curP].c[curS].logs[curL].t=t;
+    }else{
+        prjs[curP].c[curS].logs.unshift({t:t});
+    }
+    closeLog();
+    refresh();
+}
+
+function closeLog(){
+    logModal.style.display="none";
+}
+</script>
+</body>
+</html>
