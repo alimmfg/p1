@@ -10,17 +10,19 @@
         button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
         th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 13px; }
+        th { background: #444; color: #fff; position: relative; }
         .p-done { background: #c8e6c9 !important; }
         .s-done { background: #e3f2fd; border: 2px solid blue !important; }
+        .edit-hint { font-size: 9px; display: block; color: #ffeb3b; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <input type="text" id="pi" placeholder="نام پروژه">
+    <input type="text" id="pi" placeholder="نام پروژه جدید">
     <button onclick="addP()" style="background:green; color:#fff">+ پروژه</button>
     <br>
-    <input type="text" id="si" placeholder="نام مرحله">
+    <input type="text" id="si" placeholder="نام مرحله جدید">
     <button onclick="addS()" style="background:blue; color:#fff">+ مرحله</button>
 
     <div style="overflow-x: auto;">
@@ -34,18 +36,18 @@
 </div>
 
 <script>
-    // استفاده از اسامی جدید برای جلوگیری از تداخل
-    var S = JSON.parse(localStorage.getItem('steps_fix')) || [];
-    var P = JSON.parse(localStorage.getItem('projs_fix')) || [];
+    var S = JSON.parse(localStorage.getItem('steps_v16')) || [];
+    var P = JSON.parse(localStorage.getItem('projs_v16')) || [];
 
     function render() {
-        localStorage.setItem('steps_fix', JSON.stringify(S));
-        localStorage.setItem('projs_fix', JSON.stringify(P));
+        localStorage.setItem('steps_v16', JSON.stringify(S));
+        localStorage.setItem('projs_v16', JSON.stringify(P));
         
         var h = document.getElementById('h');
-        var headHtml = '<tr><th>نام پروژه</th>';
+        var headHtml = '<tr><th>پروژه <br><small>(برای ادیت کلیک کنید)</small></th>';
         for(var i=0; i<S.length; i++) {
-            headHtml += '<th>' + S[i] + ' <span onclick="delS('+i+')" style="color:red; font-size:10px">[حذف]</span></th>';
+            headHtml += '<th><span onclick="editSName('+i+')">' + S[i] + '</span><br>' +
+                        '<small onclick="delS('+i+')" style="color:red; cursor:pointer;">[حذف]</small></th>';
         }
         h.innerHTML = headHtml + '</tr>';
 
@@ -54,7 +56,9 @@
         for(var j=0; j<P.length; j++) {
             var rowClass = P[j].f ? 'p-done' : '';
             bodyHtml += '<tr class="'+rowClass+'">';
-            bodyHtml += '<td onclick="tgP('+j+')"><b>'+P[j].n+'</b><br><small>'+(P[j].f?'تمام':'جاری')+'</small></td>';
+            bodyHtml += '<td><b onclick="editPName('+j+')">'+P[j].n+'</b><br>' +
+                        '<small onclick="tgP('+j+')" style="color:blue; cursor:pointer;">'+(P[j].f?'[بازگشت]':'[اتمام]')+'</small> ' +
+                        '<small onclick="delP('+j+')" style="color:red; cursor:pointer;">[حذف]</small></td>';
             for(var k=0; k<S.length; k++) {
                 var d = P[j].d[k] || {t:'', f:false};
                 var cellClass = d.f ? 's-done' : '';
@@ -65,45 +69,4 @@
         b.innerHTML = bodyHtml;
     }
 
-    function addP() {
-        var v = document.getElementById('pi').value;
-        if(v) { P.push({n:v, d:{}, f:false}); document.getElementById('pi').value=''; render(); }
-    }
-
-    function addS() {
-        var v = document.getElementById('si').value;
-        if(v) { S.push(v); document.getElementById('si').value=''; render(); }
-    }
-
-    function delS(i) { if(confirm('حذف؟')) { S.splice(i,1); render(); } }
-    
-    function tgP(i) { if(confirm('اتمام پروژه؟')) { P[i].f = !P[i].f; render(); } }
-
-    function ed(pi, si) {
-        if(!P[pi].d[si]) P[pi].d[si] = {t:'', f:false};
-        var res = prompt("1. متن گزارش\n2. برای تیک سبز بنویس: ok\n3. برای پاک کردن بنویس: clear", P[pi].d[si].t);
-        if(res !== null) {
-            if(res.toLowerCase() == 'ok') {
-                P[pi].d[si].f = !P[pi].d[si].f;
-            } else if(res.toLowerCase() == 'clear') {
-                P[pi].d[si] = {t:'', f:false};
-            } else {
-                var now = new Date();
-                var time = now.getHours() + ":" + now.getMinutes();
-                P[pi].d[si].t = time + " - " + res + "<br>" + P[pi].d[si].t;
-            }
-            render();
-        }
-    }
-
-    function save() {
-        var a = document.createElement("a");
-        var file = new Blob([JSON.stringify({S,P})], {type: 'application/json'});
-        a.href = URL.createObjectURL(file);
-        a.download = "backup.json"; a.click();
-    }
-
-    render();
-</script>
-</body>
-</html>
+    function addP() { var v = document.getElementById('pi').value; if(v) { P.push({n:v, d:{}, f:false}); document.getElementById('pi').value='';
