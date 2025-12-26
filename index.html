@@ -50,16 +50,16 @@
     </div>
 
     <div style="margin-top: 20px; display: flex; gap: 10px;">
-        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">💾 دانلود بک‌آپ</button>
-        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">📥 بازیابی فایل</button>
+        <button onclick="exportData()" style="flex:1; background:#8e44ad; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">💾 دانلود بک‌آپ (Export)</button>
+        <button onclick="document.getElementById('fileIn').click()" style="flex:1; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">📥 بازیابی فایل (Import)</button>
         <input type="file" id="fileIn" style="display:none" onchange="importData(event)">
     </div>
 </div>
 
 <div id="modalOverlay" onclick="closeModal()"></div>
 <div id="noteModal">
-    <h4 id="modalTitle">ثبت یادداشت</h4>
-    <textarea id="modalText" rows="6" placeholder="متن را بنویسید... (اینتر برای خط بعد)"></textarea>
+    <h4 id="modalTitle">ثبت / ویرایش یادداشت</h4>
+    <textarea id="modalText" rows="6" placeholder="متن یادداشت... (اینتر برای خط بعد)"></textarea>
     <div style="display:flex; gap:10px;">
         <button onclick="saveNote()" style="flex:2; background:#27ae60; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">ذخیره</button>
         <button onclick="closeModal()" style="flex:1; background:#bdc3c7; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer;">بستن</button>
@@ -67,13 +67,14 @@
 </div>
 
 <script>
-    var prjs = JSON.parse(localStorage.getItem('K_V10')) || [];
-    var stps = JSON.parse(localStorage.getItem('S_V10')) || [];
+    // استفاده از کلید ثابت برای جلوگیری از پریدن دیتا در آپدیت‌های مختلف
+    var prjs = JSON.parse(localStorage.getItem('WORKSHOP_PROJECTS')) || [];
+    var stps = JSON.parse(localStorage.getItem('WORKSHOP_STEPS')) || [];
     var activeRef = null;
 
     function refresh() {
-        localStorage.setItem('K_V10', JSON.stringify(prjs));
-        localStorage.setItem('S_V10', JSON.stringify(stps));
+        localStorage.setItem('WORKSHOP_PROJECTS', JSON.stringify(prjs));
+        localStorage.setItem('WORKSHOP_STEPS', JSON.stringify(stps));
 
         var hHtml = '<tr><th>اطلاعات پروژه</th>';
         stps.forEach((s, i) => {
@@ -112,15 +113,15 @@
             if (logIdx !== null) prjs[pjIdx].c[stIdx].logs.splice(logIdx, 1);
         } else {
             if (logIdx !== null) {
-                prjs[pjIdx].c[stIdx].logs[logIdx].t = txt;
+                prjs[pjIdx].c[stIdx].logs[logIdx].t = txt; // ویرایش متن، ساعت قبلی می‌ماند
             } else {
-                // این بخش دقیقاً در لحظه کلیک روی ذخیره، زمان جدید میسازد
-                var d = new Date();
-                var timeStr = d.getHours() + ":" + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-                var dateStr = d.toLocaleDateString('fa-IR');
-                var fullStamp = dateStr + " ساعت " + timeStr;
+                // ثبت ساعت و تاریخ کاملاً جدید در لحظه ایجاد
+                var now = new Date();
+                var timeStr = now.getHours() + ":" + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                var dateStr = now.toLocaleDateString('fa-IR');
+                var timeStamp = dateStr + " ساعت " + timeStr;
                 
-                prjs[pjIdx].c[stIdx].logs.unshift({d: fullStamp, t: txt});
+                prjs[pjIdx].c[stIdx].logs.unshift({d: timeStamp, t: txt});
             }
         }
         closeModal();
@@ -132,14 +133,31 @@
         document.getElementById('noteModal').style.display = 'none';
     }
 
+    // توابع پشتیبان‌گیری و بازیابی
     function exportData() {
-        var blob = new Blob([JSON.stringify({p:prjs, s:stps})], {type:'application/json'});
-        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "workshop_backup.json"; a.click();
+        var data = { projects: prjs, steps: stps };
+        var blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+        var a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = "workshop_data_" + new Date().getTime() + ".json"; 
+        a.click();
     }
 
     function importData(e) {
         var reader = new FileReader();
-        reader.onload = function(ev) { try { var d = JSON.parse(ev.target.result); prjs = d.p; stps = d.s; refresh(); alert("بازیابی شد"); } catch(e){alert("فایل نامعتبر")} };
+        reader.onload = function(ev) { 
+            try { 
+                var d = JSON.parse(ev.target.result); 
+                if(d.projects && d.steps) {
+                    prjs = d.projects; 
+                    stps = d.steps; 
+                    refresh(); 
+                    alert("داده‌ها با موفقیت بازیابی شدند."); 
+                } else {
+                    alert("ساختار فایل صحیح نیست.");
+                }
+            } catch(err){alert("خطا در خواندن فایل!")} 
+        };
         reader.readAsText(e.target.files[0]);
     }
 
@@ -149,8 +167,8 @@
     function editP(i) { var n = prompt("نام جدید پروژه:", prjs[i].n); if(n) { prjs[i].n = n; refresh(); } }
     function finishP(i) { prjs[i].f = !prjs[i].f; refresh(); }
     function finishS(pi, si) { if(!prjs[pi].c[si]) prjs[pi].c[si]={logs:[], f:false}; prjs[pi].c[si].f = !prjs[pi].c[si].f; refresh(); }
-    function delP(i) { if(confirm("حذف پروژه؟")) { prjs.splice(i, 1); refresh(); } }
-    function delS(i) { if(confirm("حذف مرحله؟")) { stps.splice(i, 1); refresh(); } }
+    function delP(i) { if(confirm("پروژه حذف شود؟")) { prjs.splice(i, 1); refresh(); } }
+    function delS(i) { if(confirm("مرحله حذف شود؟")) { stps.splice(i, 1); refresh(); } }
 
     refresh();
 </script>
