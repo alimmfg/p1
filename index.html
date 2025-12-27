@@ -4,17 +4,28 @@
     <meta charset="UTF-8">
     <style>
         body { font-family: Tahoma; background: #f0f2f5; padding: 15px; direction: rtl; font-size: 18px; }
-        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 1300px; margin: auto; }
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 1400px; margin: auto; }
         input, textarea { padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-family: Tahoma; margin: 10px 0; width: 100%; box-sizing: border-box; font-size: 19px; }
-        .btn { padding: 15px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 17px; margin: 2px; }
         .btn-p { background: #27ae60; color: white; }
         .btn-s { background: #2980b9; color: white; }
         .btn-save { background: #2ecc71; color: white; width: 100%; padding: 20px; font-size: 20px; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 25px; }
-        th, td { border: 2px solid #333; padding: 15px; text-align: center; vertical-align: top; }
+        th, td { border: 2px solid #333; padding: 15px; text-align: center; vertical-align: top; position: relative; }
         th { background: #34495e; color: white; }
+        
+        /* رنگ‌بندی پایان کار */
+        .done-row { background-color: #d4edda !important; } /* سبز برای پایان کل پروژه */
+        .done-cell { background-color: #d1ecf1 !important; border: 3px solid #0c5460 !important; } /* آبی برای پایان مرحله */
+
         .note-box { background: #fff9c4; border: 1px solid #fbc02d; padding: 12px; margin-bottom: 10px; border-radius: 8px; text-align: right; font-size: 18px; white-space: pre-wrap; line-height: 1.6; }
         .time-tag { color: #d32f2f; font-size: 13px; font-weight: bold; display: block; border-bottom: 1px solid #ffe082; margin-bottom: 6px; }
+        
+        .finish-btn { font-size: 12px; padding: 5px 10px; border-radius: 5px; cursor: pointer; border: none; display: block; width: 100%; margin-top: 5px; }
+        .btn-proj-fin { background: #576574; color: white; }
+        .btn-step-fin { background: #54a0ff; color: white; }
+
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 20px; box-shadow: 0 0 100px rgba(0,0,0,0.5); z-index: 1000; width: 90%; max-width: 650px; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
         .backup-area { margin-top: 50px; display: flex; gap: 15px; }
@@ -23,18 +34,23 @@
 <body>
 
 <div class="container">
-    <h2 style="text-align:center;">مدیریت کارگاه (نسخه اصلاحی)</h2>
+    <h2 style="text-align:center;">مدیریت پیشرفته کارگاه</h2>
     <div style="display:flex; gap:10px; margin-bottom:10px;">
-        <input type="text" id="p_name" placeholder="نام پروژه...">
-        <button class="btn btn-p" onclick="addProject()">ثبت</button>
+        <input type="text" id="p_name" placeholder="نام پروژه جدید...">
+        <button class="btn btn-p" onclick="addProject()">ثبت پروژه</button>
     </div>
     <div style="display:flex; gap:10px;">
-        <input type="text" id="s_name" placeholder="نام مرحله...">
-        <button class="btn btn-s" onclick="addStep()">ثبت</button>
+        <input type="text" id="s_name" placeholder="نام مرحله جدید...">
+        <button class="btn btn-s" onclick="addStep()">ثبت مرحله</button>
     </div>
+    
     <div style="overflow-x: auto;">
-        <table><thead id="h_row"></thead><tbody id="b_rows"></tbody></table>
+        <table>
+            <thead id="h_row"></thead>
+            <tbody id="b_rows"></tbody>
+        </table>
     </div>
+
     <div class="backup-area">
         <button onclick="downloadBackup()" class="btn" style="background:#8e44ad; color:white;">💾 دانلود بک‌آپ</button>
         <button onclick="document.getElementById('fileIn').click()" class="btn" style="background:#d35400; color:white;">📥 بازیابی فایل</button>
@@ -50,25 +66,39 @@
 </div>
 
 <script>
-    const DB_KEY = "WORKSHOP_V12_FINAL";
+    const DB_KEY = "WORKSHOP_V13_FINAL";
     let data = JSON.parse(localStorage.getItem(DB_KEY)) || { projects: [], steps: [] };
     let currentEdit = null;
     let oldTextValue = "";
 
     function render() {
         localStorage.setItem(DB_KEY, JSON.stringify(data));
-        let head = '<tr><th>پروژه</th>';
+        
+        let head = '<tr><th>اطلاعات پروژه</th>';
         data.steps.forEach((s, i) => {
             head += `<th onclick="editStepName(${i})" style="cursor:pointer">${s} <br><small style="color:#ff7675" onclick="delStep(event, ${i})">[حذف]</small></th>`;
         });
         document.getElementById('h_row').innerHTML = head + '</tr>';
+
         let body = '';
         data.projects.forEach((p, pi) => {
-            body += `<tr><td onclick="editProjName(${pi})" style="cursor:pointer"><b>${p.name}</b><br><small style="color:red" onclick="delProj(event, ${pi})">[حذف]</small></td>`;
+            let rowClass = p.finished ? 'done-row' : '';
+            body += `<tr class="${rowClass}">
+                <td style="min-width:150px">
+                    <b onclick="editProjName(${pi})" style="cursor:pointer; font-size:20px">${p.name}</b>
+                    <button class="finish-btn btn-proj-fin" onclick="toggleProjFinish(${pi})">${p.finished ? '↩ بازگشت' : '✓ پایان پروژه'}</button>
+                    <small style="color:red; cursor:pointer" onclick="delProj(event, ${pi})">[حذف کل]</small>
+                </td>`;
+            
             data.steps.forEach((s, si) => {
-                let cell = p.cells[si] || { logs: [] };
-                let logsHtml = cell.logs.map((l, li) => `<div class="note-box" onclick="event.stopPropagation(); openNote(${pi}, ${si}, li=${li})"><span class="time-tag">${l.time}</span>${l.text}</div>`).join('');
-                body += `<td onclick="openNote(${pi}, ${si})">${logsHtml || '<small style="color:#ccc">کلیک...</small>'}</td>`;
+                let cell = p.cells[si] || { logs: [], finished: false };
+                let cellClass = cell.finished ? 'done-cell' : '';
+                let logsHtml = (cell.logs || []).map((l, li) => `<div class="note-box" onclick="event.stopPropagation(); openNote(${pi}, ${si}, ${li})"><span class="time-tag">${l.time}</span>${l.text}</div>`).join('');
+                
+                body += `<td class="${cellClass}" onclick="openNote(${pi}, ${si})">
+                    ${logsHtml || '<small style="color:#ccc">کلیک...</small>'}
+                    <button class="finish-btn btn-step-fin" onclick="event.stopPropagation(); toggleStepFinish(${pi}, ${si})">${cell.finished ? '↩' : '✅ اتمام مرحله'}</button>
+                </td>`;
             });
             body += '</tr>';
         });
@@ -77,6 +107,7 @@
 
     function openNote(pi, si, li = null) {
         currentEdit = { pi, si, li };
+        if (!data.projects[pi].cells[si]) data.projects[pi].cells[si] = { logs: [], finished: false };
         oldTextValue = li !== null ? data.projects[pi].cells[si].logs[li].text : "";
         document.getElementById('m_text').value = oldTextValue;
         document.getElementById('overlay').style.display = 'block';
@@ -88,12 +119,8 @@
         let newText = document.getElementById('m_text').value.trim();
         let now = new Date().toLocaleDateString('fa-IR') + " " + new Date().getHours() + ":" + (new Date().getMinutes()<10?'0':'') + new Date().getMinutes();
 
-        if (!data.projects[pi].cells[si]) data.projects[pi].cells[si] = { logs: [] };
-
         if (li !== null) {
-            // اگر متن واقعاً تغییر کرده باشد
             if (newText !== oldTextValue) {
-                // اضافه کردن زمان جدید در یک خط تازه
                 data.projects[pi].cells[si].logs[li].text = newText + "\n[ویرایش: " + now + "]";
             }
         } else if (newText !== "") {
@@ -103,15 +130,23 @@
         render();
     }
 
+    function toggleProjFinish(pi) { data.projects[pi].finished = !data.projects[pi].finished; render(); }
+    function toggleStepFinish(pi, si) { 
+        if (!data.projects[pi].cells[si]) data.projects[pi].cells[si] = { logs: [], finished: false };
+        data.projects[pi].cells[si].finished = !data.projects[pi].cells[si].finished; 
+        render(); 
+    }
+
     function closeNote() { document.getElementById('overlay').style.display = 'none'; document.getElementById('modal').style.display = 'none'; }
-    function addProject() { let n = document.getElementById('p_name').value; if(n){ data.projects.push({name:n, cells:{}}); document.getElementById('p_name').value=''; render(); } }
+    function addProject() { let n = document.getElementById('p_name').value; if(n){ data.projects.push({name:n, cells:{}, finished:false}); document.getElementById('p_name').value=''; render(); } }
     function addStep() { let n = document.getElementById('s_name').value; if(n){ data.steps.push(n); document.getElementById('s_name').value=''; render(); } }
     function editProjName(i) { let n = prompt("نام جدید:", data.projects[i].name); if(n){ data.projects[i].name=n; render(); } }
     function editStepName(i) { let n = prompt("نام جدید:", data.steps[i]); if(n){ data.steps[i]=n; render(); } }
     function delProj(e, i) { e.stopPropagation(); if(confirm("حذف؟")){ data.projects.splice(i,1); render(); } }
     function delStep(e, i) { e.stopPropagation(); if(confirm("حذف؟")){ data.steps.splice(i,1); render(); } }
-    function downloadBackup() { let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"})); a.download = "workshop.json"; a.click(); }
-    function uploadBackup(e) { let r = new FileReader(); r.onload = function(ev){ data = JSON.parse(ev.target.result); render(); alert("اوکی شد"); }; r.readAsText(e.target.files[0]); }
+    function downloadBackup() { let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"})); a.download = "workshop_backup.json"; a.click(); }
+    function uploadBackup(e) { let r = new FileReader(); r.onload = function(ev){ data = JSON.parse(ev.target.result); render(); alert("بازیابی شد"); }; r.readAsText(e.target.files[0]); }
+    
     render();
 </script>
 </body>
